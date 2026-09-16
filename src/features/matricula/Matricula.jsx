@@ -10,29 +10,33 @@ export default function Matricula({ alumno, onAlumnoUpdated }) {
   const [step, setStep] = useState('select-plan-ciclo')
   const [selectedPlanId, setSelectedPlanId] = useState(alumno?.id_plan || 2)
   const [selectedCicloId, setSelectedCicloId] = useState(1)
-  const [periodo, setPeriodo] = useState(null)
+  const [periodos, setPeriodos] = useState([])
+  const [selectedPeriodo, setSelectedPeriodo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [savingPlan, setSavingPlan] = useState(false)
 
-  // Cargar el periodo académico activo (ej. 2024-2)
+  // Cargar periodos académicos (2026-1 y 2026-2)
   useEffect(() => {
     let mounted = true
     matriculaApi
       .periodos()
       .then((data) => {
         if (!mounted) return
-        const active =
-          data.periodos?.find((p) => p.estado === 'en_curso') ||
-          data.periodos?.[0] || {
-            id_periodo: 1,
-            cod_per_acad: '2024-2',
-            estado: 'en_curso',
-          }
-        setPeriodo(active)
+        const pList = data.periodos || []
+        setPeriodos(pList)
+        // Por defecto seleccionar 2026-1 si existe, o el primero
+        const p2026_1 = pList.find((p) => p.cod_per_acad === '2026-1') || pList[0] || {
+          id_periodo: 1,
+          cod_per_acad: '2026-1',
+          estado: 'en_curso',
+        }
+        setSelectedPeriodo(p2026_1)
       })
       .catch(() => {
         if (mounted) {
-          setPeriodo({ id_periodo: 1, cod_per_acad: '2024-2', estado: 'en_curso' })
+          const fallback = { id_periodo: 1, cod_per_acad: '2026-1', estado: 'en_curso' }
+          setPeriodos([fallback, { id_periodo: 2, cod_per_acad: '2026-2', estado: 'en_curso' }])
+          setSelectedPeriodo(fallback)
         }
       })
       .finally(() => {
@@ -44,8 +48,15 @@ export default function Matricula({ alumno, onAlumnoUpdated }) {
     }
   }, [])
 
-  // Paso 1: Cuando el usuario selecciona Plan (2010 / 2019) y Ciclo (1..10)
-  const handleSelectPlanCiclo = async (planId, cicloId) => {
+  // Paso 1: Configuración seleccionada (Período 2026-1/2, Plan 2010/2019, Ciclo 1..10)
+  const handleSelectConfig = async (periodoCod, planId, cicloId) => {
+    // Buscar objeto del período seleccionado
+    const foundPeriodo = periodos.find((p) => p.cod_per_acad === periodoCod) || {
+      id_periodo: periodoCod === '2026-2' ? 2 : 1,
+      cod_per_acad: periodoCod,
+      estado: 'en_curso',
+    }
+    setSelectedPeriodo(foundPeriodo)
     setSelectedPlanId(planId)
     setSelectedCicloId(cicloId)
 
@@ -64,11 +75,11 @@ export default function Matricula({ alumno, onAlumnoUpdated }) {
       }
     }
 
-    // Avanzar a la pantalla de Información de Matrícula (Imagen 2)
+    // Avanzar al paso 2: Información de Matrícula (Imagen 2)
     setStep('info')
   }
 
-  // Paso 2: Desde Información de Matrícula (Imagen 2), hacer clic en "Iniciar Matrícula"
+  // Paso 2: Avanzar al paso 3 (Registro de Matrícula - Imágenes 1, 3 y 4)
   const handleIniciarMatricula = () => {
     setStep('registro')
   }
@@ -80,14 +91,16 @@ export default function Matricula({ alumno, onAlumnoUpdated }) {
       {step === 'select-plan-ciclo' && (
         <PlanCicloSelector
           alumno={alumno}
-          onSelectPlanCiclo={handleSelectPlanCiclo}
+          periodos={periodos}
+          selectedPeriodo={selectedPeriodo}
+          onSelectConfig={handleSelectConfig}
           saving={savingPlan}
         />
       )}
 
       {step === 'info' && (
         <InfoMatricula
-          periodo={periodo}
+          periodo={selectedPeriodo}
           onIniciar={handleIniciarMatricula}
           onCambiarConfig={() => setStep('select-plan-ciclo')}
         />
@@ -96,7 +109,7 @@ export default function Matricula({ alumno, onAlumnoUpdated }) {
       {step === 'registro' && (
         <RegistroMatricula
           alumno={alumno}
-          periodo={periodo}
+          periodo={selectedPeriodo}
           selectedPlanId={selectedPlanId}
           selectedCicloId={selectedCicloId}
           onCambiarPlanCiclo={() => setStep('select-plan-ciclo')}

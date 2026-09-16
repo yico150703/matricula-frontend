@@ -20,9 +20,10 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
     return `${y}-${m}-${d} ${h}:${min}:${s}`
   }
 
-  const codPeriodo = periodo?.cod_per_acad || '2024-2'
-  const fechaInicio = '07/08/2024 09:00:00'
-  const fechaFin = '08/08/2024 23:59:00'
+  const codPeriodo = periodo?.cod_per_acad || '2026-1'
+  const is2026_1 = codPeriodo === '2026-1'
+  const fechaInicio = is2026_1 ? '16/03/2026 09:00:00' : '17/08/2026 09:00:00'
+  const fechaFin = is2026_1 ? '18/03/2026 23:59:00' : '19/08/2026 23:59:00'
 
   return (
     <div className="info-matricula-container">
@@ -38,27 +39,27 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
           <div className="info-item">
             <h3>1. Control de Cronograma de Matrícula</h3>
             <p>
-              Verificación de Fechas de Inicio y Fin de Matrícula del Período Vigente y de Acceso al Módulo de Matrícula.
+              Verificación de Fechas de Inicio y Fin de Matrícula del Período Vigente (<strong>{codPeriodo}</strong>) y de Acceso al Módulo de Matrícula de la FIIS.
             </p>
           </div>
 
           <div className="info-item">
             <h3>2. Control de Acceso de Facultad</h3>
             <p>
-              Verificación de la Programación Interna establecida por la Oficina de Matrícula de su Facultad.
+              Verificación de la Programación Interna establecida por la Oficina de Matrícula de la <strong>Facultad de Ingeniería Industrial y de Sistemas (FIIS)</strong>.
             </p>
           </div>
 
           <div className="info-item">
             <h3>3. Control de Pre-Matrícula</h3>
             <p>
-              Verificación del Registro de Pre-Matrícula el cual debe haber sido procesado por la Oficina de Matrícula de su Facultad. De no existir debe acercarse a la Oficina de Matrícula.
+              Verificación del Registro de Pre-Matrícula el cual debe haber sido procesado por la Dirección de Escuela de Ingeniería de Sistemas.
             </p>
           </div>
 
           {onCambiarConfig && (
             <button type="button" className="btn-secondary-link" onClick={onCambiarConfig}>
-              ← Cambiar Plan o Ciclo Seleccionado
+              ← Cambiar Período ({codPeriodo}), Plan o Ciclo
             </button>
           )}
         </div>
@@ -66,7 +67,7 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
         {/* Columna Derecha: Estado de Matrícula y Acceso */}
         <div className="info-card-right">
           <div className="status-banner-enabled">
-            MATRICULA INTERNET HABILITADA
+            MATRICULA INTERNET HABILITADA · FIIS
           </div>
 
           <div className="status-grid-boxes">

@@ -1552,3 +1552,182 @@ button:disabled {
     padding: 3rem 1.5rem;
   }
 }
+
+/* =========================================================
+   14. ESTILOS ADICIONALES: PERIODOS 2026, HORARIOS Y PDF
+   ========================================================= */
+.periodos-grid-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+.periodo-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.3rem;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.periodo-card:hover {
+  border-color: #93c5fd;
+  background: #ffffff;
+}
+
+.periodo-card.selected {
+  border-color: #0284c7;
+  background: #f0f9ff;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+}
+
+.periodo-tag-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #e0f2fe;
+  color: #0284c7;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.periodo-card h4 {
+  margin: 0 0 0.3rem;
+  font-size: 1.2rem;
+  color: var(--unfv-blue-title);
+}
+
+.periodo-card p {
+  margin: 0 0 0.4rem;
+  font-size: 0.88rem;
+  color: #475569;
+}
+
+.periodo-card small {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.ciclo-regla-note {
+  font-size: 0.9rem;
+  color: #1e3a8a;
+  background: #eef4fb;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  margin: 0 0 1rem;
+}
+
+.ciclo-btn.recommended {
+  border-color: #38bdf8;
+  background: #f0f9ff;
+}
+
+.ciclo-btn.dimmed {
+  opacity: 0.8;
+}
+
+/* Horarios y Profesores en la Tabla de Cursos */
+.table-docente-horario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.table-docente-horario.active-selection {
+  background: #dcfce7;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+}
+
+.schedule-docente {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.schedule-time {
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.schedule-more-sections {
+  font-size: 0.74rem;
+  color: #0284c7;
+  font-weight: 600;
+}
+
+.schedule-pending {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Encabezado y Filtros de Ciclo */
+.filter-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.badge-periodo-tipo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+}
+
+.chip-secundario {
+  opacity: 0.85;
+}
+
+/* Botones de Acción de Matrícula */
+.actions-matricula-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.2rem;
+  margin: 1.5rem 0 3rem;
+  flex-wrap: wrap;
+}
+
+.btn-download-pdf {
+  background: #0f4c81;
+  color: white;
+  padding: 0.8rem 1.8rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(15, 76, 129, 0.25);
+}
+
+.btn-download-pdf:hover {
+  background: #0a365c;
+  transform: translateY(-1px);
+}
+
+.btn-download-pdf-outline {
+  background: white;
+  color: #0f4c81;
+  border: 2px solid #0f4c81;
+  padding: 0.9rem 1.8rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(15, 76, 129, 0.1);
+}
+
+.btn-download-pdf-outline:hover {
+  background: #f0f7ff;
+  transform: translateY(-1px);
+}

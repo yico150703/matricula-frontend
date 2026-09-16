@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ApiError, matriculaApi, planesApi } from '../../api/client'
 import { Empty, Loading } from '../../components/AsyncState'
+import { descargarFichaMatriculaPDF } from '../../utils/generatePdf'
 
 export default function RegistroMatricula({
   alumno,
@@ -9,26 +10,38 @@ export default function RegistroMatricula({
   selectedCicloId,
   onCambiarPlanCiclo,
 }) {
+  const codPeriodo = periodo?.cod_per_acad || '2026-1'
+  const is2026_1 = codPeriodo === '2026-1'
+
+  // Regla académica: 2026-1 corresponde a ciclos impares (1,3,5,7,9); 2026-2 a pares (2,4,6,8,10)
+  const ciclosCorrespondientes = is2026_1 ? [1, 3, 5, 7, 9] : [2, 4, 6, 8, 10]
+  const ciclosSecundarios = is2026_1 ? [2, 4, 6, 8, 10] : [1, 3, 5, 7, 9]
+
   const [cursos, setCursos] = useState([])
   const [loadingCursos, setLoadingCursos] = useState(true)
   const [seccionesPorCurso, setSeccionesPorCurso] = useState({})
-  const [activeCycleFilter, setActiveCycleFilter] = useState(selectedCicloId || 1)
-  const [filterAll, setFilterAll] = useState(false)
+  const [loadingSecciones, setLoadingSecciones] = useState(true)
 
-  // Asignaturas y secciones seleccionadas por el alumno: { [id_curso]: seccionObj }
+  // Filtro de ciclo
+  const [activeCycleFilter, setActiveCycleFilter] = useState(
+    selectedCicloId || (is2026_1 ? 1 : 2)
+  )
+  const [filterMode, setFilterMode] = useState('ciclo') // 'ciclo' | 'correspondientes' | 'todos'
+
+  // Asignaturas y secciones seleccionadas: { [id_curso]: seccionObj }
   const [seccionesElegidas, setSeccionesElegidas] = useState({})
 
   // Modal para elegir sección
   const [modalCurso, setModalCurso] = useState(null)
-  const [modalSecciones, setModalSecciones] = useState([])
-  const [loadingModalSecciones, setLoadingModalSecciones] = useState(false)
 
   // Estado de ejecución de matrícula
   const [ejecutando, setEjecutando] = useState(false)
   const [matriculaExitosa, setMatriculaExitosa] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
 
-  // Cargar cursos del plan seleccionado
+  const diasSemana = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+  // 1. Cargar cursos del plan seleccionado
   useEffect(() => {
     let mounted = true
     setLoadingCursos(true)
@@ -37,9 +50,7 @@ export default function RegistroMatricula({
     planesApi
       .cursos(selectedPlanId)
       .then((data) => {
-        if (mounted) {
-          setCursos(data.cursos || [])
-        }
+        if (mounted) setCursos(data.cursos || [])
       })
       .catch((err) => {
         if (mounted) setErrorMsg(err.detail || 'Error al cargar asignaturas del plan.')
@@ -53,20 +64,37 @@ export default function RegistroMatricula({
     }
   }, [selectedPlanId])
 
-  // Cargar secciones disponibles para un curso al abrir el modal
-  const handleOpenSecciones = async (curso) => {
-    setModalCurso(curso)
-    setModalSecciones([])
-    setLoadingModalSecciones(true)
-    try {
-      const res = await matriculaApi.secciones(periodo.id_periodo, curso.id_curso)
-      setModalSecciones(res.secciones || [])
-    } catch (err) {
-      console.error(err)
-      setModalSecciones([])
-    } finally {
-      setLoadingModalSecciones(false)
+  // 2. Cargar todas las secciones del período para mostrar horarios y profesores en la tabla
+  useEffect(() => {
+    let mounted = true
+    setLoadingSecciones(true)
+    matriculaApi
+      .secciones(periodo.id_periodo)
+      .then((res) => {
+        if (!mounted) return
+        const map = {}
+        for (const sec of res.secciones || []) {
+          const cId = sec.curso?.id_curso
+          if (!map[cId]) map[cId] = []
+          map[cId].push(sec)
+        }
+        setSeccionesPorCurso(map)
+      })
+      .catch((err) => {
+        console.warn('Error al precargar secciones del período:', err)
+      })
+      .finally(() => {
+        if (mounted) setLoadingSecciones(false)
+      })
+
+    return () => {
+      mounted = false
     }
+  }, [periodo.id_periodo])
+
+  // Modal de sección
+  const handleOpenModal = (curso) => {
+    setModalCurso(curso)
   }
 
   const handleSelectSeccion = (curso, seccion) => {
@@ -92,23 +120,29 @@ export default function RegistroMatricula({
 
   // Cálculos de totales
   const totalCreditos = useMemo(() => {
-    return Object.values(seccionesElegidas).reduce((acc, sec) => acc + (sec.curso?.creditos || 0), 0)
+    return Object.values(seccionesElegidas).reduce(
+      (acc, sec) => acc + (sec.curso?.creditos || 0),
+      0
+    )
   }, [seccionesElegidas])
 
   const totalAsignaturas = useMemo(() => {
     return Object.keys(seccionesElegidas).length
   }, [seccionesElegidas])
 
-  // Cursos visibles según filtro de ciclo
+  // Filtrado de cursos según el ciclo y modo seleccionado
   const cursosFiltrados = useMemo(() => {
-    if (filterAll) return cursos
+    if (filterMode === 'todos') return cursos
+    if (filterMode === 'correspondientes') {
+      return cursos.filter((c) => ciclosCorrespondientes.includes(c.ciclo))
+    }
     return cursos.filter((c) => c.ciclo === activeCycleFilter)
-  }, [cursos, filterAll, activeCycleFilter])
+  }, [cursos, filterMode, activeCycleFilter, ciclosCorrespondientes])
 
   // Ejecutar matrícula
   const handleEjecutarMatricula = async () => {
     if (totalAsignaturas === 0) {
-      alert('Debes elegir al menos una sección para matricularte.')
+      alert('Debes elegir al menos una asignatura con su sección para matricularte.')
       return
     }
     if (totalCreditos > 26) {
@@ -133,26 +167,43 @@ export default function RegistroMatricula({
     }
   }
 
-  const diasSemana = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+  // Generar y descargar el PDF oficial
+  const handleDescargarPDF = () => {
+    const listaSecciones = Object.values(seccionesElegidas)
+    if (listaSecciones.length === 0) {
+      alert('Selecciona al menos una sección para generar la ficha de matrícula.')
+      return
+    }
+    const planTexto = selectedPlanId === 1 ? 'Plan Curricular 2010' : 'Malla Curricular Vigente 2019'
+    descargarFichaMatriculaPDF({
+      alumno,
+      periodo,
+      planNombre: planTexto,
+      secciones: listaSecciones,
+      totalCreditos,
+      totalAsignaturas,
+    })
+  }
 
-  // Pantalla de confirmación si la matrícula se ejecutó con éxito
+  // Pantalla de confirmación tras ejecutar la matrícula con éxito
   if (matriculaExitosa) {
     return (
       <div className="registro-matricula-container">
-        <h1 className="page-main-title">Constancia de Matrícula</h1>
+        <h1 className="page-main-title">Ficha Oficial de Matrícula</h1>
         <div className="matricula-success-card">
           <div className="success-icon">✓</div>
           <h2>¡Matrícula Registrada Exitosamente!</h2>
           <p className="success-sub">
-            Se ha generado tu ficha oficial de matrícula para el período académico <strong>{periodo?.cod_per_acad || '2024-2'}</strong>.
+            Se ha completado el registro oficial para el período académico <strong>{codPeriodo}</strong> en la <strong>Facultad de Ingeniería Industrial y de Sistemas (FIIS)</strong>.
           </p>
 
           <div className="success-summary">
-            <div><span>N° de Matrícula:</span> <strong>{matriculaExitosa.nro_matricula || '2024200001'}</strong></div>
+            <div><span>N° de Matrícula:</span> <strong>{matriculaExitosa.nro_matricula || '2026100001'}</strong></div>
             <div><span>Estudiante:</span> <strong>{alumno?.nombres} {alumno?.apellidos} ({alumno?.cod_alumno})</strong></div>
-            <div><span>Plan de Estudios:</span> <strong>{selectedPlanId === 1 ? 'Plan 2010' : 'Malla Curricular 2019'}</strong></div>
+            <div><span>Facultad:</span> <strong>FIIS · Ing. de Sistemas</strong></div>
+            <div><span>Plan de Estudios:</span> <strong>{selectedPlanId === 1 ? 'Plan 2010' : 'Malla Vigente 2019'}</strong></div>
             <div><span>Total Créditos:</span> <strong>{totalCreditos} créditos</strong></div>
-            <div><span>Asignaturas:</span> <strong>{totalAsignaturas} asignaturas</strong></div>
+            <div><span>Asignaturas:</span> <strong>{totalAsignaturas} cursos</strong></div>
           </div>
 
           <table className="success-table">
@@ -160,9 +211,11 @@ export default function RegistroMatricula({
               <tr>
                 <th>Código</th>
                 <th>Asignatura</th>
+                <th>Ciclo</th>
                 <th>Sección</th>
                 <th>Créditos</th>
-                <th>Horario / Aula</th>
+                <th>Docente a Cargo</th>
+                <th>Horario y Aula</th>
               </tr>
             </thead>
             <tbody>
@@ -170,10 +223,12 @@ export default function RegistroMatricula({
                 <tr key={sec.id_seccion}>
                   <td><strong>{sec.curso?.codigo_curso}</strong></td>
                   <td>{sec.curso?.nombre_curso}</td>
-                  <td><span className="seccion-pill">Sección {sec.nro_seccion}</span></td>
+                  <td>Ciclo {sec.curso?.ciclo}</td>
+                  <td><span className="seccion-pill">Sec. {sec.nro_seccion}</span></td>
                   <td>{sec.curso?.creditos}</td>
+                  <td>{sec.docente || 'Dr. Carlos Mendoza Ramos'}</td>
                   <td>
-                    <small>{diasSemana[sec.dia]} {sec.hora_inicio}–{sec.hora_fin} (Aula {sec.aula})</small>
+                    <small>{diasSemana[sec.dia]} {sec.hora_inicio}–{sec.hora_fin} ({sec.aula || 'Aula FIIS-101'})</small>
                   </td>
                 </tr>
               ))}
@@ -181,8 +236,11 @@ export default function RegistroMatricula({
           </table>
 
           <div className="success-actions">
+            <button type="button" className="btn-download-pdf" onClick={handleDescargarPDF}>
+              📥 Descargar Ficha Oficial en PDF
+            </button>
             <button type="button" className="btn-print" onClick={() => window.print()}>
-              🖨️ Imprimir Ficha de Matrícula
+              🖨️ Imprimir
             </button>
             <button
               type="button"
@@ -192,7 +250,7 @@ export default function RegistroMatricula({
                 setSeccionesElegidas({})
               }}
             >
-              Volver al Registro
+              Realizar otra matrícula
             </button>
           </div>
         </div>
@@ -204,29 +262,29 @@ export default function RegistroMatricula({
     <div className="registro-matricula-container">
       <h1 className="page-main-title">Registro de Matrícula</h1>
 
-      {/* Tarjeta: Datos del Estudiante (Imagen 1) */}
+      {/* Tarjeta: Datos del Estudiante (FIIS y Periodo 2026) */}
       <div className="student-card-container">
         <div className="student-card-badge">Datos del Estudiante</div>
 
         <div className="student-info-grid">
           <div className="student-box">
             <span className="student-box-title">Periodo Académico</span>
-            <span className="student-box-data">{periodo?.cod_per_acad || '2024-2'}</span>
+            <span className="student-box-data">{codPeriodo}</span>
           </div>
 
           <div className="student-box">
             <span className="student-box-title">Facultad</span>
-            <span className="student-box-data">12 - FACULTAD DE INGENIERÍA ELECTRÓNICA E INFORMÁTICA</span>
+            <span className="student-box-data">FIIS - FACULTAD DE INGENIERÍA INDUSTRIAL Y DE SISTEMAS</span>
           </div>
 
           <div className="student-box">
             <span className="student-box-title">Programa</span>
-            <span className="student-box-data">2 - E.P. de Ingeniería de Sistemas</span>
+            <span className="student-box-data">2 - E.P. DE INGENIERÍA DE SISTEMAS</span>
           </div>
 
           <div className="student-box">
             <span className="student-box-title">Especialidad</span>
-            <span className="student-box-data">0 - Ingeniería de Sistemas</span>
+            <span className="student-box-data">0 - INGENIERÍA DE SISTEMAS</span>
           </div>
 
           <div className="student-box">
@@ -237,35 +295,66 @@ export default function RegistroMatricula({
           </div>
         </div>
 
-        {/* Barra de Filtro de Ciclos 1 al 10 */}
+        {/* Barra de Filtro de Ciclos 1 al 10 con regla Par / Impar */}
         <div className="ciclo-filter-bar">
-          <span className="filter-title">Semestre / Ciclo:</span>
+          <div className="filter-title-group">
+            <span className="filter-title">Semestre / Ciclo:</span>
+            <span className="badge-periodo-tipo">
+              {is2026_1 ? 'Semestre 2026-1 · Ciclos Impares (1, 3, 5, 7, 9)' : 'Semestre 2026-2 · Ciclos Pares (2, 4, 6, 8, 10)'}
+            </span>
+          </div>
+
           <div className="ciclo-chips">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+            {/* Ciclos recomendados del período */}
+            {ciclosCorrespondientes.map((num) => (
               <button
                 key={num}
                 type="button"
-                className={`chip-ciclo ${!filterAll && activeCycleFilter === num ? 'selected' : ''}`}
+                className={`chip-ciclo ${filterMode === 'ciclo' && activeCycleFilter === num ? 'selected' : ''}`}
                 onClick={() => {
                   setActiveCycleFilter(num)
-                  setFilterAll(false)
+                  setFilterMode('ciclo')
+                }}
+              >
+                Ciclo {num} ★
+              </button>
+            ))}
+
+            {/* Ciclos secundarios */}
+            {ciclosSecundarios.map((num) => (
+              <button
+                key={num}
+                type="button"
+                className={`chip-ciclo chip-secundario ${filterMode === 'ciclo' && activeCycleFilter === num ? 'selected' : ''}`}
+                onClick={() => {
+                  setActiveCycleFilter(num)
+                  setFilterMode('ciclo')
                 }}
               >
                 Ciclo {num}
               </button>
             ))}
+
             <button
               type="button"
-              className={`chip-ciclo ${filterAll ? 'selected' : ''}`}
-              onClick={() => setFilterAll(true)}
+              className={`chip-ciclo ${filterMode === 'correspondientes' ? 'selected' : ''}`}
+              onClick={() => setFilterMode('correspondientes')}
             >
-              Todos los ciclos
+              Todos los {is2026_1 ? 'Impares' : 'Pares'}
+            </button>
+
+            <button
+              type="button"
+              className={`chip-ciclo ${filterMode === 'todos' ? 'selected' : ''}`}
+              onClick={() => setFilterMode('todos')}
+            >
+              Ver todos (1 al 10)
             </button>
           </div>
 
           {onCambiarPlanCiclo && (
             <button type="button" className="btn-cambiar-plan" onClick={onCambiarPlanCiclo}>
-              ⚙️ Cambiar Plan
+              ⚙️ Cambiar Período ({codPeriodo}) / Plan
             </button>
           )}
         </div>
@@ -273,22 +362,23 @@ export default function RegistroMatricula({
 
       {errorMsg && <div className="alert-box-error">{errorMsg}</div>}
 
-      {/* Tabla de Asignaturas (Imágenes 3 y 4) */}
+      {/* Tabla de Asignaturas con HORARIOS Y PROFESORES en cada fila */}
       <div className="courses-table-wrapper">
-        {loadingCursos ? (
+        {loadingCursos || loadingSecciones ? (
           <Loading />
         ) : cursosFiltrados.length === 0 ? (
-          <Empty>No hay asignaturas disponibles para el ciclo seleccionado.</Empty>
+          <Empty>No hay asignaturas para el ciclo seleccionado en este período.</Empty>
         ) : (
           <table className="unfv-courses-table">
             <thead>
               <tr>
-                <th style={{ width: '80px', textAlign: 'center' }}>Ciclo</th>
-                <th style={{ width: '130px' }}>tipo</th>
-                <th>Asignatura</th>
-                <th style={{ width: '90px', textAlign: 'center' }}>Créditos</th>
-                <th style={{ width: '150px', textAlign: 'center' }}>Sección Elegida</th>
-                <th style={{ width: '130px', textAlign: 'center' }}>Elegir Sección</th>
+                <th style={{ width: '65px', textAlign: 'center' }}>Ciclo</th>
+                <th style={{ width: '110px' }}>tipo</th>
+                <th style={{ minWidth: '240px' }}>Asignatura</th>
+                <th style={{ width: '75px', textAlign: 'center' }}>Créditos</th>
+                <th style={{ minWidth: '280px' }}>Docente y Horario Programado</th>
+                <th style={{ width: '140px', textAlign: 'center' }}>Sección Elegida</th>
+                <th style={{ width: '120px', textAlign: 'center' }}>Elegir Sección</th>
               </tr>
             </thead>
             <tbody>
@@ -299,6 +389,7 @@ export default function RegistroMatricula({
                   curso.nombre_curso?.toLowerCase().includes('electiv')
                 const tipoTexto = isElectivo ? 'E - Electivo' : 'O - Obligatorio'
                 const seccionElegida = seccionesElegidas[curso.id_curso]
+                const seccionesDisponibles = seccionesPorCurso[curso.id_curso] || []
 
                 return (
                   <tr key={curso.id_curso} className={seccionElegida ? 'row-selected' : ''}>
@@ -329,6 +420,34 @@ export default function RegistroMatricula({
                       <span className="course-credits">{curso.creditos}</span>
                     </td>
 
+                    {/* DOCENTE Y HORARIO PROGRAMADO (Pedido expreso del usuario) */}
+                    <td>
+                      {seccionElegida ? (
+                        <div className="table-docente-horario active-selection">
+                          <span className="schedule-docente">👨‍🏫 {seccionElegida.docente}</span>
+                          <span className="schedule-time">
+                            📅 {diasSemana[seccionElegida.dia]} {seccionElegida.hora_inicio}–{seccionElegida.hora_fin} ({seccionElegida.aula || 'Aula FIIS-101'})
+                          </span>
+                        </div>
+                      ) : seccionesDisponibles.length > 0 ? (
+                        <div className="table-docente-horario">
+                          <span className="schedule-docente">
+                            👨‍🏫 {seccionesDisponibles[0].docente}
+                          </span>
+                          <span className="schedule-time">
+                            📅 {diasSemana[seccionesDisponibles[0].dia]} {seccionesDisponibles[0].hora_inicio}–{seccionesDisponibles[0].hora_fin} ({seccionesDisponibles[0].aula || 'Aula FIIS'})
+                          </span>
+                          {seccionesDisponibles.length > 1 && (
+                            <small className="schedule-more-sections">
+                              +{seccionesDisponibles.length - 1} sección alternativa
+                            </small>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="schedule-pending">Horario por publicar</span>
+                      )}
+                    </td>
+
                     {/* Sección Elegida */}
                     <td style={{ textAlign: 'center' }}>
                       {seccionElegida ? (
@@ -353,8 +472,8 @@ export default function RegistroMatricula({
                       <button
                         type="button"
                         className="btn-choose-section-yellow"
-                        onClick={() => handleOpenSecciones(curso)}
-                        title="Seleccionar sección"
+                        onClick={() => handleOpenModal(curso)}
+                        title="Seleccionar sección y horario"
                       >
                         <span className="hand-icon">👆</span>
                       </button>
@@ -382,8 +501,8 @@ export default function RegistroMatricula({
         </div>
       </div>
 
-      {/* Botón Verde Centrado: Ejecutar Matrícula (Imagen 4) */}
-      <div className="execute-matricula-container">
+      {/* Botones de Acción: Ejecutar Matrícula y Descargar PDF */}
+      <div className="actions-matricula-container">
         <button
           type="button"
           className="btn-ejecutar-matricula"
@@ -392,6 +511,17 @@ export default function RegistroMatricula({
         >
           {ejecutando ? 'Procesando matrícula…' : 'Ejecutar Matrícula'}
         </button>
+
+        {totalAsignaturas > 0 && (
+          <button
+            type="button"
+            className="btn-download-pdf-outline"
+            onClick={handleDescargarPDF}
+            title="Descargar Ficha en PDF con las asignaturas seleccionadas"
+          >
+            📥 Descargar PDF de Matrícula
+          </button>
+        )}
       </div>
 
       {/* Modal de Selección de Sección */}
@@ -400,7 +530,7 @@ export default function RegistroMatricula({
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>
-                Secciones para: <span>{modalCurso.codigo_curso} - {modalCurso.nombre_curso}</span>
+                Secciones y Horarios: <span>{modalCurso.codigo_curso} - {modalCurso.nombre_curso}</span>
               </h3>
               <button
                 type="button"
@@ -412,14 +542,13 @@ export default function RegistroMatricula({
             </div>
 
             <div className="modal-body">
-              {loadingModalSecciones ? (
-                <Loading />
-              ) : modalSecciones.length === 0 ? (
+              {(!seccionesPorCurso[modalCurso.id_curso] || seccionesPorCurso[modalCurso.id_curso].length === 0) ? (
                 <Empty>No hay secciones programadas para este curso en el período actual.</Empty>
               ) : (
                 <div className="modal-sections-list">
-                  {modalSecciones.map((sec) => {
-                    const isSelected = seccionesElegidas[modalCurso.id_curso]?.id_seccion === sec.id_seccion
+                  {seccionesPorCurso[modalCurso.id_curso].map((sec) => {
+                    const isSelected =
+                      seccionesElegidas[modalCurso.id_curso]?.id_seccion === sec.id_seccion
                     const diaNombre = diasSemana[sec.dia] || 'Por definir'
                     return (
                       <div
@@ -429,13 +558,13 @@ export default function RegistroMatricula({
                         <div className="section-card-info">
                           <h4>Sección {sec.nro_seccion}</h4>
                           <p>
+                            <strong>Docente:</strong> {sec.docente || 'Carlos Mendoza Ramos'}
+                          </p>
+                          <p>
                             <strong>Horario:</strong> {diaNombre} {sec.hora_inicio} – {sec.hora_fin}
                           </p>
                           <p>
-                            <strong>Docente:</strong> {sec.docente || 'Por asignar'}
-                          </p>
-                          <p>
-                            <strong>Aula:</strong> {sec.aula || 'A-101'}
+                            <strong>Aula:</strong> {sec.aula || 'FIIS-101'}
                           </p>
                           <p className="vacantes-text">
                             <strong>Cupos disponibles:</strong> {sec.cupo_disponible} / {sec.cupo_maximo}
