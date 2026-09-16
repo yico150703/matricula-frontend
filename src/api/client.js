@@ -43,3 +43,12 @@ export const matriculaApi = {
   crear: (payload) => api('/matriculas', { method: 'POST', body: JSON.stringify(payload) }),
   retirar: (matricula, seccion) => api(`/matriculas/${matricula}/detalle/${seccion}`, { method: 'DELETE' }),
 }
+
+export const planesApi = {
+  list: () => api('/planes'),
+  cursos: (idPlan, ciclo) => api(`/planes/${idPlan}/cursos${ciclo ? `?ciclo=${ciclo}` : ''}`),
+}
+
+export const alumnosApi = {
+  cambiarPlan: (codigo, idPlan) => api(`/alumnos/${encodeURIComponent(codigo)}/plan`, { method: 'PATCH', body: JSON.stringify({ id_plan: idPlan }) }),
+}
