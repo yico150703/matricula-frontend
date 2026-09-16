@@ -10,15 +10,20 @@ export class ApiError extends Error {
 
 export async function api(path, options = {}) {
   const token = localStorage.getItem('matricula_token')
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      Accept: 'application/json',
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  })
+  let response
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        Accept: 'application/json',
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
+    })
+  } catch (networkErr) {
+    throw new ApiError('error_conexion', 0, `No se pudo conectar con el servidor en ${API_URL}. Comprueba que el backend esté activo y que no haya bloqueo de CORS.`)
+  }
   const body = await response.json().catch(() => ({}))
   if (!response.ok) throw new ApiError(body.error || 'error_de_api', response.status, body.detail || 'No fue posible completar la solicitud.')
   return body
