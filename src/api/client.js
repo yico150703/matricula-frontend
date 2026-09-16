@@ -50,5 +50,7 @@ export const planesApi = {
 }
 
 export const alumnosApi = {
+  list: () => api('/alumnos'),
+  crear: (payload) => api('/alumnos', { method: 'POST', body: JSON.stringify(payload) }),
   cambiarPlan: (codigo, idPlan) => api(`/alumnos/${encodeURIComponent(codigo)}/plan`, { method: 'PATCH', body: JSON.stringify({ id_plan: idPlan }) }),
 }

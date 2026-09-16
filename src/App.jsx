@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { authApi } from './api/client'
 import TopBar from './components/TopBar'
+import RegistroAlumnoModal from './features/alumnos/RegistroAlumnoModal'
 import Login from './features/auth/Login'
+import DiagramaERModal from './features/diagrama/DiagramaERModal'
 import Historial from './features/historial/Historial'
 import Horario from './features/horario/Horario'
 import Dashboard from './features/malla/Dashboard'
@@ -15,7 +17,7 @@ const navItems = [
   ['/historial', 'Historial Académico', '📜'],
 ]
 
-function Shell({ alumno, onLogout, onAlumnoUpdated }) {
+function Shell({ alumno, onLogout, onAlumnoUpdated, onOpenDiagramaER, onOpenAlumnos }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const toggleMenu = () => setMenuOpen((prev) => !prev)
@@ -23,15 +25,21 @@ function Shell({ alumno, onLogout, onAlumnoUpdated }) {
 
   return (
     <div className="unfv-app-layout">
-      {/* Barra superior oficial UNFV (Temporizador, Usuario, Salir) */}
-      <TopBar alumno={alumno} onLogout={onLogout} onToggleMenu={toggleMenu} />
+      {/* Barra superior oficial UNFV (Temporizador, Usuario, Salir, Diagrama E-R, Alumnos) */}
+      <TopBar
+        alumno={alumno}
+        onLogout={onLogout}
+        onToggleMenu={toggleMenu}
+        onOpenDiagramaER={onOpenDiagramaER}
+        onOpenAlumnos={onOpenAlumnos}
+      />
 
       {/* Menú lateral desplegable (Drawer) */}
       {menuOpen && <div className="drawer-backdrop" onClick={closeMenu} />}
       <aside className={`unfv-drawer ${menuOpen ? 'open' : ''}`}>
         <div className="drawer-header">
           <div className="drawer-brand">
-            <span className="drawer-brand-sub">UNFV · FIEI</span>
+            <span className="drawer-brand-sub">UNFV · FIIS</span>
             <strong>Ingeniería de Sistemas</strong>
           </div>
           <button type="button" className="drawer-close-btn" onClick={closeMenu}>
@@ -52,6 +60,29 @@ function Shell({ alumno, onLogout, onAlumnoUpdated }) {
             </NavLink>
           ))}
         </nav>
+
+        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              closeMenu()
+              onOpenDiagramaER()
+            }}
+            style={{ width: '100%', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
+          >
+            📊 Diagrama E-R
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              closeMenu()
+              onOpenAlumnos()
+            }}
+            style={{ width: '100%', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
+          >
+            👥 Gestión Alumnos
+          </button>
+        </div>
 
         <div className="drawer-footer">
           <div className="drawer-student-info">
@@ -86,6 +117,8 @@ function Shell({ alumno, onLogout, onAlumnoUpdated }) {
 export default function App() {
   const [alumno, setAlumno] = useState(null)
   const [checking, setChecking] = useState(true)
+  const [diagramaOpen, setDiagramaOpen] = useState(false)
+  const [alumnosOpen, setAlumnosOpen] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -100,7 +133,9 @@ export default function App() {
   }, [])
 
   const loggedIn = (profile, token) => {
-    localStorage.setItem('matricula_token', token)
+    if (token) {
+      localStorage.setItem('matricula_token', token)
+    }
     setAlumno(profile)
     navigate('/matricula')
   }
@@ -115,15 +150,51 @@ export default function App() {
     setAlumno(updatedAlumno)
   }
 
-  if (checking) return <div className="centered">Comprobando sesión…</div>
-  if (!alumno) {
-    return (
-      <Routes>
-        <Route path="/login" element={<Login onLoggedIn={loggedIn} />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    )
+  const handleLoginAs = (targetStudent) => {
+    if (targetStudent.token) {
+      loggedIn(targetStudent, targetStudent.token)
+    } else {
+      // Si no tiene token directo, iniciamos sesión como el estudiante
+      setAlumno(targetStudent)
+      navigate('/matricula')
+    }
   }
 
-  return <Shell alumno={alumno} onLogout={logout} onAlumnoUpdated={handleAlumnoUpdated} />
+  if (checking) return <div className="centered">Comprobando sesión…</div>
+
+  return (
+    <>
+      {!alumno ? (
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <Login
+                onLoggedIn={loggedIn}
+                onOpenAlumnos={() => setAlumnosOpen(true)}
+                onOpenDiagramaER={() => setDiagramaOpen(true)}
+              />
+            }
+          />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      ) : (
+        <Shell
+          alumno={alumno}
+          onLogout={logout}
+          onAlumnoUpdated={handleAlumnoUpdated}
+          onOpenDiagramaER={() => setDiagramaOpen(true)}
+          onOpenAlumnos={() => setAlumnosOpen(true)}
+        />
+      )}
+
+      {/* Modales globales de Diagrama E-R y Gestión de Alumnos */}
+      <DiagramaERModal isOpen={diagramaOpen} onClose={() => setDiagramaOpen(false)} />
+      <RegistroAlumnoModal
+        isOpen={alumnosOpen}
+        onClose={() => setAlumnosOpen(false)}
+        onLoginAs={handleLoginAs}
+      />
+    </>
+  )
 }

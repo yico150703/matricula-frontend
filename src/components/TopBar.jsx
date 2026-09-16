@@ -37,6 +37,52 @@ export default function TopBar({ alumno, onLogout, onToggleMenu }) {
       </div>
 
       <div className="topbar-right">
+        {/* Acceso directo a Diagrama E-R (Estilo Foto) */}
+        <button
+          type="button"
+          onClick={onOpenDiagramaER}
+          title="Ver Diagrama Entidad-Relación Oficial (Con Verbos)"
+          style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            color: '#ffffff',
+            borderRadius: '6px',
+            padding: '0.4rem 0.85rem',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            transition: 'background 0.2s',
+          }}
+        >
+          📊 Diagrama E-R
+        </button>
+
+        {/* Acceso a Agregar / Gestionar Alumnos en BD */}
+        <button
+          type="button"
+          onClick={onOpenAlumnos}
+          title="Agregar Alumnos a la Base de Datos PostgreSQL"
+          style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            color: '#ffffff',
+            borderRadius: '6px',
+            padding: '0.4rem 0.85rem',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            transition: 'background 0.2s',
+          }}
+        >
+          👥 Alumnos
+        </button>
+
         <div className="topbar-timer" title="Tiempo restante de sesión">
           {formatTimer(secondsLeft)}
         </div>
