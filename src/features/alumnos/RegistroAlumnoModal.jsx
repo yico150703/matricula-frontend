@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { alumnosApi } from '../../api/client'
 
 export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
@@ -9,6 +9,7 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   const [createdStudent, setCreatedStudent] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Form state
   const [formData, setFormData] = useState({
@@ -17,7 +18,7 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
     apellidos: '',
     email: '',
     password: '',
-    id_plan: 1,
+    id_plan: 2, // 2 = Malla 2019 (vigente)
   })
 
   const fetchAlumnos = async () => {
@@ -46,6 +47,7 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
       setErrorMsg('')
       setSuccessMsg('')
       setCreatedStudent(null)
+      setSearchQuery('')
       fetchAlumnos()
     }
   }, [isOpen])
@@ -73,7 +75,9 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
         ...alumnoCreado,
         token: res.access_token,
       })
-      setSuccessMsg(`¡Alumno ${alumnoCreado.nombres} ${alumnoCreado.apellidos} (${alumnoCreado.cod_alumno}) registrado con éxito en PostgreSQL!`)
+      setSuccessMsg(
+        `¡Alumno ${alumnoCreado.nombres} ${alumnoCreado.apellidos} (${alumnoCreado.cod_alumno}) registrado con éxito en PostgreSQL!`
+      )
       // Refresh list
       fetchAlumnos()
     } catch (err) {
@@ -90,73 +94,248 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
     }
   }
 
+  const filteredAlumnos = alumnos.filter((al) => {
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    return (
+      al.cod_alumno?.toLowerCase().includes(q) ||
+      al.nombres?.toLowerCase().includes(q) ||
+      al.apellidos?.toLowerCase().includes(q) ||
+      al.email?.toLowerCase().includes(q)
+    )
+  })
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card er-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '850px' }}>
-        {/* Header */}
-        <div className="modal-header">
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      style={{
+        zIndex: 1200,
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(3px)',
+      }}
+    >
+      <div
+        className="modal-card"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '95vw',
+          maxWidth: '860px',
+          background: '#ffffff',
+          borderRadius: '16px',
+          boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.35)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          border: '1px solid #cbd5e1',
+        }}
+      >
+        {/* Header Institucional */}
+        <div
+          style={{
+            padding: '1.2rem 1.75rem',
+            background: 'linear-gradient(135deg, #0a2540 0%, #0f3b60 100%)',
+            color: '#ffffff',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <div>
-            <span className="info-badge" style={{ background: '#0284c7', color: '#fff', marginBottom: '0.35rem' }}>
-              FIIS — Escuela Profesional de Ingeniería de Sistemas
-            </span>
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: '#93c5fd',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                marginBottom: '0.3rem',
+              }}
+            >
+              <span>🏛️ FIIS · UNFV</span>
+              <span>•</span>
+              <span>Escuela Profesional de Ingeniería de Sistemas</span>
+            </div>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                color: '#ffffff',
+                letterSpacing: '-0.01em',
+              }}
+            >
               👥 Gestión y Registro de Alumnos en Base de Datos
             </h3>
           </div>
-          <button className="btn-close-modal" onClick={onClose} title="Cerrar ventana">
+          <button
+            onClick={onClose}
+            title="Cerrar ventana"
+            style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              border: 'none',
+              color: '#ffffff',
+              width: '34px',
+              height: '34px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.1rem',
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.85)')}
+            onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)')}
+          >
             ✕
           </button>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="plan-cycle-tabs" style={{ padding: '0.75rem 1.5rem 0', display: 'flex', gap: '0.5rem', borderBottom: '1px solid #e2e8f0' }}>
+        {/* Tab Switcher con Alto Contraste */}
+        <div
+          style={{
+            background: '#f8fafc',
+            padding: '0.75rem 1.5rem 0',
+            display: 'flex',
+            gap: '0.6rem',
+            borderBottom: '2px solid #e2e8f0',
+          }}
+        >
           <button
-            className={`cycle-tab-btn ${activeTab === 'nuevo' ? 'active' : ''}`}
+            type="button"
             onClick={() => setActiveTab('nuevo')}
-            style={{ borderRadius: '8px 8px 0 0', padding: '0.6rem 1.2rem', fontWeight: 600 }}
+            style={{
+              padding: '0.7rem 1.4rem',
+              fontSize: '0.92rem',
+              fontWeight: 700,
+              borderRadius: '8px 8px 0 0',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.18s ease',
+              background: activeTab === 'nuevo' ? '#0f3b60' : '#e2e8f0',
+              color: activeTab === 'nuevo' ? '#ffffff' : '#334155',
+              boxShadow: activeTab === 'nuevo' ? '0 -2px 8px rgba(15, 59, 96, 0.2)' : 'none',
+            }}
           >
             ➕ Registrar Nuevo Alumno
           </button>
+
           <button
-            className={`cycle-tab-btn ${activeTab === 'lista' ? 'active' : ''}`}
+            type="button"
             onClick={() => setActiveTab('lista')}
-            style={{ borderRadius: '8px 8px 0 0', padding: '0.6rem 1.2rem', fontWeight: 600 }}
+            style={{
+              padding: '0.7rem 1.4rem',
+              fontSize: '0.92rem',
+              fontWeight: 700,
+              borderRadius: '8px 8px 0 0',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.18s ease',
+              background: activeTab === 'lista' ? '#0f3b60' : '#e2e8f0',
+              color: activeTab === 'lista' ? '#ffffff' : '#334155',
+              boxShadow: activeTab === 'lista' ? '0 -2px 8px rgba(15, 59, 96, 0.2)' : 'none',
+            }}
           >
             📋 Alumnos Registrados ({alumnos.length})
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', padding: '1.5rem' }}>
+        <div
+          style={{
+            maxHeight: '74vh',
+            overflowY: 'auto',
+            padding: '1.75rem',
+            background: '#ffffff',
+          }}
+        >
           {activeTab === 'nuevo' ? (
             <div>
+              {/* Alerta de Error */}
               {errorMsg && (
-                <div className="auth-alert" style={{ marginBottom: '1.25rem', padding: '0.75rem 1rem', background: '#fee2e2', border: '1px solid #ef4444', color: '#991b1b', borderRadius: '8px' }}>
+                <div
+                  style={{
+                    marginBottom: '1.25rem',
+                    padding: '0.85rem 1.1rem',
+                    background: '#fef2f2',
+                    border: '1.5px solid #ef4444',
+                    color: '#991b1b',
+                    borderRadius: '10px',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                  }}
+                >
                   ⚠️ {errorMsg}
                 </div>
               )}
 
+              {/* Alerta de Éxito con botón para matricularse directo */}
               {successMsg && (
-                <div style={{ marginBottom: '1.25rem', padding: '1rem', background: '#ecfdf5', border: '1px solid #10b981', color: '#065f46', borderRadius: '8px' }}>
-                  <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>✅ {successMsg}</div>
-                  <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.875rem' }}>
-                    El alumno ya fue insertado en la tabla <code>alumno</code> con contraseña hasheada y asignado a la <strong>Facultad FIIS</strong> y <strong>E.P. Ingeniería de Sistemas</strong>.
+                <div
+                  style={{
+                    marginBottom: '1.5rem',
+                    padding: '1.2rem',
+                    background: '#f0fdf4',
+                    border: '1.5px solid #16a34a',
+                    borderRadius: '10px',
+                    color: '#166534',
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.4rem' }}>
+                    ✅ {successMsg}
+                  </div>
+                  <p style={{ margin: '0 0 1rem 0', fontSize: '0.875rem', color: '#15803d' }}>
+                    El alumno fue guardado en la base de datos PostgreSQL de la FIIS con su contraseña hasheada y asignado al programa de <strong>Ingeniería de Sistemas</strong>.
                   </p>
                   {createdStudent && onLoginAs && (
                     <button
-                      className="btn-primary"
+                      type="button"
                       onClick={() => handleSwitchUser(createdStudent)}
-                      style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+                      style={{
+                        background: '#16a34a',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '0.65rem 1.25rem',
+                        fontSize: '0.9rem',
+                        fontWeight: 700,
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)',
+                      }}
                     >
-                      🚀 Iniciar sesión y matricularse ahora con {createdStudent.nombres}
+                      🚀 Iniciar sesión y matricularse ahora como {createdStudent.nombres} {createdStudent.apellidos}
                     </button>
                   )}
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>
+              {/* Banner Informativo */}
+              <div
+                style={{
+                  background: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                  borderRadius: '10px',
+                  padding: '0.85rem 1.1rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                }}
+              >
+                <span style={{ fontSize: '1.4rem' }}>ℹ️</span>
+                <p style={{ margin: 0, fontSize: '0.86rem', color: '#0369a1', lineHeight: 1.4 }}>
+                  Los datos ingresados se insertarán directamente en la tabla <strong>alumno</strong> de PostgreSQL. La contraseña se encripta con hash seguro y el estudiante podrá iniciar sesión inmediatamente.
+                </p>
+              </div>
+
+              {/* Formulario de Registro con Alto Contraste */}
+              <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.2rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem', marginBottom: '0.4rem', color: '#0f172a' }}>
                     Código de Alumno *
                   </label>
                   <input
@@ -165,15 +344,26 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
                     required
                     value={formData.cod_alumno}
                     onChange={handleChange}
-                    placeholder="Ej. 20260002"
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem' }}
+                    placeholder="Ej. 20260005"
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.9rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      color: '#0f172a',
+                      background: '#ffffff',
+                      fontWeight: 600,
+                    }}
                   />
-                  <small style={{ color: '#64748b', fontSize: '0.75rem' }}>Identificador único de 8 dígitos.</small>
+                  <small style={{ color: '#475569', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
+                    Código numérico único institucional.
+                  </small>
                 </div>
 
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>
-                    Correo Institucional *
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem', marginBottom: '0.4rem', color: '#0f172a' }}>
+                    Correo Institucional (@unfv.edu.pe) *
                   </label>
                   <input
                     type="email"
@@ -181,15 +371,26 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="alumno@unfv.edu.pe"
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem' }}
+                    placeholder="usuario@unfv.edu.pe"
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.9rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      color: '#0f172a',
+                      background: '#ffffff',
+                      fontWeight: 500,
+                    }}
                   />
-                  <small style={{ color: '#64748b', fontSize: '0.75rem' }}>Usado para autenticación en la plataforma.</small>
+                  <small style={{ color: '#475569', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
+                    Usado para autenticación y notificaciones.
+                  </small>
                 </div>
 
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>
-                    Nombres *
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem', marginBottom: '0.4rem', color: '#0f172a' }}>
+                    Nombres del Estudiante *
                   </label>
                   <input
                     type="text"
@@ -197,14 +398,23 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
                     required
                     value={formData.nombres}
                     onChange={handleChange}
-                    placeholder="Ej. Carlos Eduardo"
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem' }}
+                    placeholder="Ej. Renzo Paolo"
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.9rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      color: '#0f172a',
+                      background: '#ffffff',
+                      fontWeight: 500,
+                    }}
                   />
                 </div>
 
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>
-                    Apellidos *
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem', marginBottom: '0.4rem', color: '#0f172a' }}>
+                    Apellidos Completos *
                   </label>
                   <input
                     type="text"
@@ -212,13 +422,22 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
                     required
                     value={formData.apellidos}
                     onChange={handleChange}
-                    placeholder="Ej. Gómez Vega"
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem' }}
+                    placeholder="Ej. Navarro Salazar"
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.9rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      color: '#0f172a',
+                      background: '#ffffff',
+                      fontWeight: 500,
+                    }}
                   />
                 </div>
 
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem', marginBottom: '0.4rem', color: '#0f172a' }}>
                     Contraseña de Acceso *
                   </label>
                   <input
@@ -228,92 +447,269 @@ export default function RegistroAlumnoModal({ isOpen, onClose, onLoginAs }) {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Mínimo 6 caracteres"
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.9rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      color: '#0f172a',
+                      background: '#ffffff',
+                    }}
                   />
-                  <small style={{ color: '#64748b', fontSize: '0.75rem' }}>Se almacenará de forma segura en PostgreSQL con hash.</small>
+                  <small style={{ color: '#475569', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
+                    Se guardará con cifrado seguro en PostgreSQL.
+                  </small>
                 </div>
 
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem', marginBottom: '0.4rem', color: '#0f172a' }}>
                     Plan Curricular Asignado *
                   </label>
                   <select
                     name="id_plan"
                     value={formData.id_plan}
                     onChange={handleChange}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem', background: '#fff' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.9rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      color: '#0f172a',
+                      background: '#ffffff',
+                      fontWeight: 600,
+                    }}
                   >
-                    <option value={1}>Plan 2019 — Malla Curricular Vigente</option>
-                    <option value={2}>Plan 2010 — Plan Curricular Anterior</option>
+                    <option value={2}>Malla Curricular Vigente 2019 (Recomendado)</option>
+                    <option value={1}>Plan Curricular 2010 (Histórico)</option>
                   </select>
-                  <small style={{ color: '#64748b', fontSize: '0.75rem' }}>El estudiante podrá también alternar entre planes en el panel.</small>
+                  <small style={{ color: '#475569', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
+                    Malla curricular asignada para el registro de asignaturas.
+                  </small>
                 </div>
 
-                <div style={{ gridColumn: '1 / -1', marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                  <button type="button" className="btn-secondary" onClick={onClose}>
+                {/* Acciones */}
+                <div
+                  style={{
+                    gridColumn: '1 / -1',
+                    marginTop: '1rem',
+                    paddingTop: '1rem',
+                    borderTop: '1px solid #e2e8f0',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: '0.85rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    style={{
+                      background: '#f1f5f9',
+                      color: '#334155',
+                      border: '1.5px solid #cbd5e1',
+                      padding: '0.75rem 1.4rem',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontSize: '0.92rem',
+                    }}
+                  >
                     Cancelar
                   </button>
-                  <button type="submit" className="btn-primary" disabled={submitting}>
-                    {submitting ? 'Guardando en PostgreSQL...' : '💾 Registrar Alumno en BD'}
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    style={{
+                      background: '#0f3b60',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '0.75rem 1.8rem',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: submitting ? 'not-allowed' : 'pointer',
+                      fontSize: '0.95rem',
+                      boxShadow: '0 4px 12px rgba(15, 59, 96, 0.25)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    {submitting ? 'Guardando en Base de Datos...' : '💾 Registrar Alumno en BD'}
                   </button>
                 </div>
               </form>
             </div>
           ) : (
+            /* TAB 2: ALUMNOS REGISTRADOS */
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b' }}>
-                  Estudiantes registrados en la tabla <code>alumno</code> de PostgreSQL habilitados para matricularse.
-                </p>
-                <button
-                  className="btn-secondary"
-                  onClick={fetchAlumnos}
-                  disabled={loadingList}
-                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-                >
-                  🔄 Actualizar
-                </button>
+              {/* Barra de Filtro / Búsqueda */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1.25rem',
+                  gap: '1rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ flex: '1', minWidth: '260px' }}>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="🔍 Buscar por código, apellidos, nombres o correo..."
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.9rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      color: '#0f172a',
+                      background: '#ffffff',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      color: '#0f3b60',
+                      background: '#e0f2fe',
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    {filteredAlumnos.length} Alumnos Encontrados
+                  </span>
+                  <button
+                    type="button"
+                    onClick={fetchAlumnos}
+                    disabled={loadingList}
+                    style={{
+                      background: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      color: '#334155',
+                      padding: '0.4rem 0.8rem',
+                      fontSize: '0.85rem',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                  >
+                    🔄 Recargar
+                  </button>
+                </div>
               </div>
 
               {loadingList ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Cargando lista de alumnos...</div>
-              ) : alumnos.length === 0 ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No hay alumnos registrados aún.</div>
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#475569', fontSize: '1rem' }}>
+                  Cargando alumnos desde la base de datos PostgreSQL...
+                </div>
+              ) : filteredAlumnos.length === 0 ? (
+                <div
+                  style={{
+                    padding: '3rem',
+                    textAlign: 'center',
+                    color: '#64748b',
+                    background: '#f8fafc',
+                    borderRadius: '10px',
+                    border: '1px dashed #cbd5e1',
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>
+                    {searchQuery ? 'No se encontraron alumnos con ese criterio de búsqueda.' : 'No hay alumnos registrados aún en la base de datos.'}
+                  </p>
+                </div>
               ) : (
-                <div className="table-responsive" style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                  <table className="courses-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                    <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '10px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                    <thead style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
                       <tr>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Código</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Estudiante</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Correo Institucional</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Plan</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Acción</th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: '#0f172a', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                          Código
+                        </th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: '#0f172a', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                          Estudiante
+                        </th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: '#0f172a', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                          Correo Institucional
+                        </th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: '#0f172a', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                          Plan Curricular
+                        </th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', color: '#0f172a', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                          Acción
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {alumnos.map((al) => (
-                        <tr key={al.cod_alumno} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '0.75rem 1rem', fontWeight: 700, color: '#1e293b' }}>
-                            {al.cod_alumno}
+                      {filteredAlumnos.map((al, idx) => (
+                        <tr
+                          key={al.cod_alumno}
+                          style={{
+                            background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                            borderBottom: '1px solid #e2e8f0',
+                            transition: 'background 0.15s',
+                          }}
+                        >
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <span
+                              style={{
+                                background: '#0f3b60',
+                                color: '#ffffff',
+                                padding: '0.2rem 0.55rem',
+                                borderRadius: '6px',
+                                fontWeight: 700,
+                                fontFamily: 'monospace',
+                                fontSize: '0.85rem',
+                              }}
+                            >
+                              {al.cod_alumno}
+                            </span>
                           </td>
-                          <td style={{ padding: '0.75rem 1rem', color: '#334155' }}>
+                          <td style={{ padding: '0.75rem 1rem', color: '#0f172a', fontWeight: 600 }}>
                             {al.nombres} {al.apellidos}
                           </td>
-                          <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>
+                          <td style={{ padding: '0.75rem 1rem', color: '#334155' }}>
                             {al.email}
                           </td>
                           <td style={{ padding: '0.75rem 1rem' }}>
-                            <span className="seccion-pill" style={{ background: al.corr_pe === 1 ? '#dbeafe' : '#fef3c7', color: al.corr_pe === 1 ? '#1e40af' : '#92400e' }}>
-                              {al.corr_pe === 1 ? 'Plan 2019' : 'Plan 2010'}
+                            <span
+                              style={{
+                                background: al.corr_pe === 1 || al.id_plan === 1 ? '#fef3c7' : '#dbeafe',
+                                color: al.corr_pe === 1 || al.id_plan === 1 ? '#92400e' : '#1e40af',
+                                padding: '0.25rem 0.65rem',
+                                borderRadius: '999px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {al.corr_pe === 1 || al.id_plan === 1 ? 'Plan 2010' : 'Malla 2019'}
                             </span>
                           </td>
                           <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                             <button
-                              className="btn-primary"
-                              style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
+                              type="button"
                               onClick={() => handleSwitchUser(al)}
-                              title="Conectar sesión con este estudiante"
+                              style={{
+                                background: '#0f3b60',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '0.45rem 0.85rem',
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                transition: 'background 0.2s',
+                              }}
+                              onMouseOver={(e) => (e.currentTarget.style.background = '#0284c7')}
+                              onMouseOut={(e) => (e.currentTarget.style.background = '#0f3b60')}
+                              title={`Conectar sesión con ${al.nombres}`}
                             >
                               Conectar 👤
                             </button>

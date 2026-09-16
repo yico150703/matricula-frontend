@@ -77,9 +77,11 @@ export default function PlanCicloSelector({
   const handlePeriodoChange = (cod) => {
     setSelectedPeriodoCod(cod)
     if (cod === '2026-1') {
-      setSelectedCiclo(1)
+      // Si el ciclo actual era par, cambiar al impar correspondiente
+      setSelectedCiclo((prev) => (prev % 2 === 0 ? Math.max(1, prev - 1) : prev || 1))
     } else {
-      setSelectedCiclo(2)
+      // Si el ciclo actual era impar, cambiar al par correspondiente
+      setSelectedCiclo((prev) => (prev % 2 !== 0 ? Math.min(10, prev + 1) : prev || 2))
     }
   }
 
@@ -163,42 +165,44 @@ export default function PlanCicloSelector({
             </div>
           </div>
 
-          {/* 3. Selección de Semestre / Ciclo (1 al 10 - 5 Años) */}
+          {/* 3. Selección de Semestre / Ciclo (Filtrado estricto por Período) */}
           <div className="selector-section">
             <h3 className="section-subtitle">
-              <span className="step-number">3</span> Selecciona tu Semestre / Ciclo Académico (5 Años · 10 Ciclos)
+              <span className="step-number">3</span> Selecciona tu Semestre / Ciclo Académico ({isPeriodoImpar ? 'Ciclos Impares' : 'Ciclos Pares'})
             </h3>
             <p className="ciclo-regla-note">
-              {selectedPeriodoCod === '2026-1' ? (
-                <>💡 En el período <strong>2026-1</strong> corresponden los <strong>ciclos impares (1, 3, 5, 7, 9)</strong>.</>
+              {isPeriodoImpar ? (
+                <>💡 Período <strong>2026-1</strong>: Se habilitan únicamente los <strong>ciclos impares (I, III, V, VII, IX)</strong> correspondientes al primer semestre del año.</>
               ) : (
-                <>💡 En el período <strong>2026-2</strong> corresponden los <strong>ciclos pares (2, 4, 6, 8, 10)</strong>.</>
+                <>💡 Período <strong>2026-2</strong>: Se habilitan únicamente los <strong>ciclos pares (II, IV, VI, VIII, X)</strong> correspondientes al segundo semestre del año.</>
               )}
             </p>
 
             <div className="ciclos-years-grid">
-              {anos.map(({ ano, ciclos }) => (
-                <div key={ano} className="ano-group">
-                  <span className="ano-label">{ano}</span>
-                  <div className="ano-buttons">
-                    {ciclos.map(({ num, label, impar }) => {
-                      const isCicloSelected = selectedCiclo === num
-                      const isRecommended = selectedPeriodoCod === '2026-1' ? impar : !impar
-                      return (
-                        <button
-                          key={num}
-                          type="button"
-                          className={`ciclo-btn ${isCicloSelected ? 'active' : ''} ${isRecommended ? 'recommended' : 'dimmed'}`}
-                          onClick={() => setSelectedCiclo(num)}
-                        >
-                          <strong>{label}</strong>
-                          <small>Semestre {num} {isRecommended ? '★' : ''}</small>
-                        </button>
-                      )
-                    })}
+              {anos.map(({ ano, ciclos }) => {
+                const visibleCiclos = ciclos.filter((c) => (isPeriodoImpar ? c.impar : !c.impar))
+                return (
+                  <div key={ano} className="ano-group">
+                    <span className="ano-label">{ano}</span>
+                    <div className="ano-buttons">
+                      {visibleCiclos.map(({ num, label }) => {
+                        const isCicloSelected = selectedCiclo === num
+                        return (
+                          <button
+                            key={num}
+                            type="button"
+                            className={`ciclo-btn ${isCicloSelected ? 'active' : ''}`}
+                            onClick={() => setSelectedCiclo(num)}
+                          >
+                            <strong>{label}</strong>
+                            <small>Semestre {num} {isCicloSelected ? '★ Activo' : ''}</small>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             <div className="ciclo-helper-text">
               Has seleccionado: <strong>Ciclo {selectedCiclo}</strong> ({Math.ceil(selectedCiclo / 2)}° Año de carrera) para el <strong>Período {selectedPeriodoCod}</strong>.

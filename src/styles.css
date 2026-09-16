@@ -477,38 +477,55 @@ button:disabled {
 
 .ciclo-btn {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  padding: 0.55rem 0.4rem;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  padding: 0.75rem 0.6rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.15rem;
-  border-radius: 8px;
+  gap: 0.25rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .ciclo-btn strong {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .ciclo-btn small {
-  font-size: 0.72rem;
-  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
 }
 
 .ciclo-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: #f0f7ff;
+  border-color: #0284c7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);
 }
 
-.ciclo-btn.active {
-  background: var(--unfv-blue-title);
-  color: white;
-  border-color: var(--unfv-blue-title);
+.ciclo-btn.active,
+.ciclo-btn.active:hover {
+  background: #0f3b60 !important;
+  color: #ffffff !important;
+  border-color: #0f3b60 !important;
+  box-shadow: 0 4px 14px rgba(15, 59, 96, 0.35);
+  transform: translateY(-2px);
+}
+
+.ciclo-btn.active strong {
+  color: #ffffff !important;
+  font-weight: 800;
 }
 
 .ciclo-btn.active small {
-  color: #93c5fd;
+  color: #93c5fd !important;
+  font-weight: 700;
 }
 
 .ciclo-helper-text {
@@ -1621,13 +1638,54 @@ button:disabled {
   margin: 0 0 1rem;
 }
 
-.ciclo-btn.recommended {
-  border-color: #38bdf8;
-  background: #f0f9ff;
+/* Banner de Ciclo Seleccionado en Registro de Matrícula */
+.ciclo-active-banner {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1.5px solid #7dd3fc;
+  border-radius: 12px;
+  padding: 1rem 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
 }
 
-.ciclo-btn.dimmed {
-  opacity: 0.8;
+.ciclo-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ciclo-pill-badge {
+  background: #0f3b60;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: 8px;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 8px rgba(15, 59, 96, 0.25);
+  white-space: nowrap;
+}
+
+.ciclo-banner-title {
+  margin: 0 0 0.2rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f3b60;
+}
+
+.ciclo-banner-desc {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #0369a1;
+}
+
+::selection {
+  background: #0f3b60;
+  color: #ffffff;
 }
 
 /* Horarios y Profesores en la Tabla de Cursos */

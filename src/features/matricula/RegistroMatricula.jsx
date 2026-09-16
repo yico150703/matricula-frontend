@@ -17,16 +17,18 @@ export default function RegistroMatricula({
   const ciclosCorrespondientes = is2026_1 ? [1, 3, 5, 7, 9] : [2, 4, 6, 8, 10]
   const ciclosSecundarios = is2026_1 ? [2, 4, 6, 8, 10] : [1, 3, 5, 7, 9]
 
+  // Ciclo seleccionado previamente por el estudiante
+  const cicloActual = Number(selectedCicloId) || (is2026_1 ? 1 : 2)
+
+  const getRomanCiclo = (num) => {
+    const map = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X' }
+    return map[num] || num
+  }
+
   const [cursos, setCursos] = useState([])
   const [loadingCursos, setLoadingCursos] = useState(true)
   const [seccionesPorCurso, setSeccionesPorCurso] = useState({})
   const [loadingSecciones, setLoadingSecciones] = useState(true)
-
-  // Filtro de ciclo
-  const [activeCycleFilter, setActiveCycleFilter] = useState(
-    selectedCicloId || (is2026_1 ? 1 : 2)
-  )
-  const [filterMode, setFilterMode] = useState('ciclo') // 'ciclo' | 'correspondientes' | 'todos'
 
   // Asignaturas y secciones seleccionadas: { [id_curso]: seccionObj }
   const [seccionesElegidas, setSeccionesElegidas] = useState({})
@@ -130,14 +132,10 @@ export default function RegistroMatricula({
     return Object.keys(seccionesElegidas).length
   }, [seccionesElegidas])
 
-  // Filtrado de cursos según el ciclo y modo seleccionado
+  // Filtrado de cursos: únicamente se muestran las asignaturas del ciclo seleccionado en el paso anterior
   const cursosFiltrados = useMemo(() => {
-    if (filterMode === 'todos') return cursos
-    if (filterMode === 'correspondientes') {
-      return cursos.filter((c) => ciclosCorrespondientes.includes(c.ciclo))
-    }
-    return cursos.filter((c) => c.ciclo === activeCycleFilter)
-  }, [cursos, filterMode, activeCycleFilter, ciclosCorrespondientes])
+    return cursos.filter((c) => c.ciclo === cicloActual)
+  }, [cursos, cicloActual])
 
   // Ejecutar matrícula
   const handleEjecutarMatricula = async () => {
@@ -295,66 +293,25 @@ export default function RegistroMatricula({
           </div>
         </div>
 
-        {/* Barra de Filtro de Ciclos 1 al 10 con regla Par / Impar */}
-        <div className="ciclo-filter-bar">
-          <div className="filter-title-group">
-            <span className="filter-title">Semestre / Ciclo:</span>
-            <span className="badge-periodo-tipo">
-              {is2026_1 ? 'Semestre 2026-1 · Ciclos Impares (1, 3, 5, 7, 9)' : 'Semestre 2026-2 · Ciclos Pares (2, 4, 6, 8, 10)'}
+        {/* Banner institucional del Ciclo Seleccionado (sin botones redundantes) */}
+        <div className="ciclo-active-banner">
+          <div className="ciclo-banner-left">
+            <span className="ciclo-pill-badge">
+              Ciclo {getRomanCiclo(cicloActual)}
             </span>
-          </div>
-
-          <div className="ciclo-chips">
-            {/* Ciclos recomendados del período */}
-            {ciclosCorrespondientes.map((num) => (
-              <button
-                key={num}
-                type="button"
-                className={`chip-ciclo ${filterMode === 'ciclo' && activeCycleFilter === num ? 'selected' : ''}`}
-                onClick={() => {
-                  setActiveCycleFilter(num)
-                  setFilterMode('ciclo')
-                }}
-              >
-                Ciclo {num} ★
-              </button>
-            ))}
-
-            {/* Ciclos secundarios */}
-            {ciclosSecundarios.map((num) => (
-              <button
-                key={num}
-                type="button"
-                className={`chip-ciclo chip-secundario ${filterMode === 'ciclo' && activeCycleFilter === num ? 'selected' : ''}`}
-                onClick={() => {
-                  setActiveCycleFilter(num)
-                  setFilterMode('ciclo')
-                }}
-              >
-                Ciclo {num}
-              </button>
-            ))}
-
-            <button
-              type="button"
-              className={`chip-ciclo ${filterMode === 'correspondientes' ? 'selected' : ''}`}
-              onClick={() => setFilterMode('correspondientes')}
-            >
-              Todos los {is2026_1 ? 'Impares' : 'Pares'}
-            </button>
-
-            <button
-              type="button"
-              className={`chip-ciclo ${filterMode === 'todos' ? 'selected' : ''}`}
-              onClick={() => setFilterMode('todos')}
-            >
-              Ver todos (1 al 10)
-            </button>
+            <div className="ciclo-banner-text">
+              <h4 className="ciclo-banner-title">
+                Asignaturas Curriculares del Ciclo {getRomanCiclo(cicloActual)} ({cicloActual}° Semestre)
+              </h4>
+              <p className="ciclo-banner-desc">
+                Período <strong>{codPeriodo}</strong> ({is2026_1 ? 'Semestre Impar' : 'Semestre Par'}) · Plan {selectedPlanId === 1 ? '2010' : '2019 Vigente'} · Mostrando <strong>{cursosFiltrados.length}</strong> asignaturas curriculares programadas
+              </p>
+            </div>
           </div>
 
           {onCambiarPlanCiclo && (
-            <button type="button" className="btn-cambiar-plan" onClick={onCambiarPlanCiclo}>
-              ⚙️ Cambiar Período ({codPeriodo}) / Plan
+            <button type="button" className="btn-cambiar-plan" onClick={onCambiarPlanCiclo} title="Regresar a seleccionar otro ciclo o período">
+              ⚙️ Cambiar Ciclo / Período
             </button>
           )}
         </div>
