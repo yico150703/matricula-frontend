@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { authApi } from '../../api/client'
+import unfvLogo from '../../assets/logo-unfv.png'
 
 export default function Login({ onLoggedIn, onOpenAlumnos, onOpenDiagramaER }) {
   const [email, setEmail] = useState('')
@@ -27,40 +28,60 @@ export default function Login({ onLoggedIn, onOpenAlumnos, onOpenDiagramaER }) {
   }
 
   return (
-    <div className="login-layout">
-      <section className="login-intro">
-        <p className="eyebrow">UNFV · FIIS · E.P. Ingeniería de Sistemas</p>
-        <h1>Tu matrícula, clara y a tiempo.</h1>
-        <p>Consulta tu avance curricular, selecciona secciones con horarios y docentes, y organiza tu matrícula académica en un solo lugar.</p>
-        
-        {onOpenDiagramaER && (
-          <div style={{ marginTop: '1.5rem' }}>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={onOpenDiagramaER}
-              style={{
-                background: 'rgba(255, 255, 255, 0.15)',
-                color: '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                padding: '0.65rem 1.25rem',
-                borderRadius: '8px',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-            >
-              📊 Ver Diagrama Entidad-Relación (DER)
-            </button>
-          </div>
-        )}
-      </section>
+    <div className="login-wrapper">
+      {/* Logo oficial UNFV encima de todo en el Login */}
+      <header className="login-top-logo-bar">
+        <img
+          src={unfvLogo}
+          alt="Universidad Nacional Federico Villarreal"
+          className="unfv-official-logo"
+        />
+      </header>
 
-      <form className="login-card" onSubmit={submit}>
-        <h2>Iniciar sesión</h2>
+      <div className="login-layout">
+        <section className="login-intro">
+          <p className="eyebrow">UNFV · FIIS · E.P. Ingeniería de Sistemas</p>
+          <h1>Sistema de Matricula UNFV</h1>
+          <p>
+            Consulta tu avance curricular, selecciona secciones con horarios y docentes, y organiza tu matrícula académica en un solo lugar.
+          </p>
+          
+          {onOpenDiagramaER && (
+            <div style={{ marginTop: '1.5rem' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={onOpenDiagramaER}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  color: '#fff',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '0.65rem 1.25rem',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                📊 Ver Diagrama Entidad-Relación (DER)
+              </button>
+            </div>
+          )}
+        </section>
+
+        <form className="login-card" onSubmit={submit}>
+          <div style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
+            <img
+              src={unfvLogo}
+              alt="Logo UNFV"
+              className="login-card-mini-logo"
+              style={{ margin: '0 auto 0.75rem auto' }}
+            />
+          </div>
+          <h2>Iniciar sesión</h2>
         <label>
           Correo institucional
           <input
@@ -134,6 +155,7 @@ export default function Login({ onLoggedIn, onOpenAlumnos, onOpenDiagramaER }) {
         </div>
       </form>
     </div>
+  </div>
   )
 }
 

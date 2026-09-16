@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError, matriculaApi, planesApi } from '../../api/client'
 import { Empty, Loading } from '../../components/AsyncState'
 import { descargarFichaMatriculaPDF } from '../../utils/generatePdf'
+import CalificacionesModal from '../notas/CalificacionesModal'
 
 export default function RegistroMatricula({
   alumno,
@@ -30,6 +31,10 @@ export default function RegistroMatricula({
   const [seccionesPorCurso, setSeccionesPorCurso] = useState({})
   const [loadingSecciones, setLoadingSecciones] = useState(true)
 
+  // Estado de prerrequisitos y aprobación de la malla
+  const [mallaEstado, setMallaEstado] = useState({})
+  const [modalNotasOpen, setModalNotasOpen] = useState(false)
+
   // Asignaturas y secciones seleccionadas: { [id_curso]: seccionObj }
   const [seccionesElegidas, setSeccionesElegidas] = useState({})
 
@@ -42,6 +47,25 @@ export default function RegistroMatricula({
   const [errorMsg, setErrorMsg] = useState('')
 
   const diasSemana = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+  // Cargar estado de la malla para validar prerrequisitos
+  const loadMallaStatus = useCallback(() => {
+    if (!alumno?.cod_alumno) return
+    matriculaApi
+      .malla(alumno.cod_alumno)
+      .then((res) => {
+        const map = {}
+        for (const c of res.cursos || []) {
+          map[c.cod_curso] = c
+        }
+        setMallaEstado(map)
+      })
+      .catch((err) => console.warn('Error al cargar estado de malla:', err))
+  }, [alumno?.cod_alumno])
+
+  useEffect(() => {
+    loadMallaStatus()
+  }, [loadMallaStatus])
 
   // 1. Cargar cursos del plan seleccionado
   useEffect(() => {
@@ -309,11 +333,35 @@ export default function RegistroMatricula({
             </div>
           </div>
 
-          {onCambiarPlanCiclo && (
-            <button type="button" className="btn-cambiar-plan" onClick={onCambiarPlanCiclo} title="Regresar a seleccionar otro ciclo o período">
-              ⚙️ Cambiar Ciclo / Período
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setModalNotasOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                border: 'none',
+                color: '#ffffff',
+                padding: '0.55rem 1rem',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(217, 119, 6, 0.35)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+              title="Poner nota a cualquier curso para aprobar o desaprobar prerrequisitos"
+            >
+              🎯 Asignar / Probar Notas
             </button>
-          )}
+
+            {onCambiarPlanCiclo && (
+              <button type="button" className="btn-cambiar-plan" onClick={onCambiarPlanCiclo} title="Regresar a seleccionar otro ciclo o período">
+                ⚙️ Cambiar Ciclo / Período
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -348,6 +396,10 @@ export default function RegistroMatricula({
                 const seccionElegida = seccionesElegidas[curso.id_curso]
                 const seccionesDisponibles = seccionesPorCurso[curso.id_curso] || []
 
+                const itemEstado = mallaEstado[curso.cod_curso]
+                const isAprobado = itemEstado?.estado === 'aprobado'
+                const isBloqueado = itemEstado?.estado === 'bloqueado_por_prerrequisito'
+
                 return (
                   <tr key={curso.id_curso} className={seccionElegida ? 'row-selected' : ''}>
                     {/* Ciclo badge */}
@@ -369,6 +421,39 @@ export default function RegistroMatricula({
                       </span>
                       {curso.area_curricular && (
                         <small className="course-area">{curso.area_curricular}</small>
+                      )}
+
+                      {/* Estado de Aprobación o Bloqueo de Prerrequisito */}
+                      {isAprobado && (
+                        <div>
+                          <span className="prereq-badge-approved">
+                            ✓ Asignatura Ya Aprobada (&ge; 11)
+                          </span>
+                        </div>
+                      )}
+                      {isBloqueado && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                          <span className="prereq-badge-blocked" title="Prerrequisito pendiente: se requiere nota >= 11">
+                            🔒 Bloqueado: Prerrequisito pendiente (Requiere nota &ge; 11)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setModalNotasOpen(true)}
+                            style={{
+                              background: '#fef3c7',
+                              border: '1px solid #f59e0b',
+                              color: '#b45309',
+                              padding: '0.15rem 0.45rem',
+                              borderRadius: '4px',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                            title="Asignar nota al prerrequisito para aprobarlo o desaprobarlo"
+                          >
+                            ✏️ Poner Nota
+                          </button>
+                        </div>
                       )}
                     </td>
 
@@ -428,11 +513,28 @@ export default function RegistroMatricula({
                     <td style={{ textAlign: 'center' }}>
                       <button
                         type="button"
-                        className="btn-choose-section-yellow"
-                        onClick={() => handleOpenModal(curso)}
-                        title="Seleccionar sección y horario"
+                        className={`btn-choose-section-yellow ${isBloqueado || isAprobado ? 'disabled' : ''}`}
+                        disabled={isBloqueado || isAprobado}
+                        onClick={() => {
+                          if (isBloqueado) {
+                            alert('No puedes matricularte: debes aprobar el prerrequisito con nota mínima de 11.')
+                            return
+                          }
+                          if (isAprobado) {
+                            alert('Esta asignatura ya fue aprobada con nota mayor o igual a 11.')
+                            return
+                          }
+                          handleOpenModal(curso)
+                        }}
+                        title={
+                          isAprobado
+                            ? 'Esta asignatura ya fue aprobada'
+                            : isBloqueado
+                            ? 'Bloqueado: debes aprobar el prerrequisito con nota >= 11'
+                            : 'Seleccionar sección y horario'
+                        }
                       >
-                        <span className="hand-icon">👆</span>
+                        <span className="hand-icon">{isBloqueado ? '🔒' : isAprobado ? '✓' : '👆'}</span>
                       </button>
                     </td>
                   </tr>
@@ -555,6 +657,14 @@ export default function RegistroMatricula({
           </div>
         </div>
       )}
+
+      {/* Modal interactivo de Asignación de Calificaciones y Prerrequisitos */}
+      <CalificacionesModal
+        isOpen={modalNotasOpen}
+        onClose={() => setModalNotasOpen(false)}
+        alumno={alumno}
+        onNotasUpdated={loadMallaStatus}
+      />
     </div>
   )
 }

@@ -6,6 +6,7 @@ export default function TopBar({
   onToggleMenu,
   onOpenDiagramaER,
   onOpenAlumnos,
+  onOpenNotas,
 }) {
   // Temporizador de 15 minutos en cuenta regresiva como en las capturas (00:14:59)
   const [secondsLeft, setSecondsLeft] = useState(15 * 60)
@@ -44,6 +45,30 @@ export default function TopBar({
       </div>
 
       <div className="topbar-right">
+        {/* Acceso directo a Asignar Notas y Prerrequisitos */}
+        <button
+          type="button"
+          onClick={onOpenNotas}
+          title="Asignar calificaciones (>= 11 aprobado, <= 10 desaprobado) y validar prerrequisitos"
+          style={{
+            background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+            border: 'none',
+            color: '#ffffff',
+            borderRadius: '6px',
+            padding: '0.4rem 0.85rem',
+            fontSize: '0.8rem',
+            fontWeight: 800,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            transition: 'background 0.2s',
+            boxShadow: '0 2px 6px rgba(217, 119, 6, 0.35)',
+          }}
+        >
+          🎯 Calificaciones / Notas
+        </button>
+
         {/* Acceso directo a Diagrama E-R (Estilo Foto) */}
         <button
           type="button"

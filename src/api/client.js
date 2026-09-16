@@ -42,6 +42,7 @@ export const matriculaApi = {
   secciones: (periodo, curso) => api(`/periodos/${periodo}/secciones?curso=${curso}`),
   crear: (payload) => api('/matriculas', { method: 'POST', body: JSON.stringify(payload) }),
   retirar: (matricula, seccion) => api(`/matriculas/${matricula}/detalle/${seccion}`, { method: 'DELETE' }),
+  registrarNota: (matricula, seccion, notaFinal) => api(`/matriculas/${matricula}/detalle/${seccion}/nota`, { method: 'PATCH', body: JSON.stringify({ nota_final: notaFinal }) }),
 }
 
 export const planesApi = {
@@ -53,4 +54,5 @@ export const alumnosApi = {
   list: () => api('/alumnos'),
   crear: (payload) => api('/alumnos', { method: 'POST', body: JSON.stringify(payload) }),
   cambiarPlan: (codigo, idPlan) => api(`/alumnos/${encodeURIComponent(codigo)}/plan`, { method: 'PATCH', body: JSON.stringify({ id_plan: idPlan }) }),
+  calificar: (codigo, codCurso, nota) => api(`/alumnos/${encodeURIComponent(codigo)}/calificar`, { method: 'POST', body: JSON.stringify({ cod_curso: codCurso, nota }) }),
 }

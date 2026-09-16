@@ -5,6 +5,7 @@ import TopBar from './components/TopBar'
 import RegistroAlumnoModal from './features/alumnos/RegistroAlumnoModal'
 import Login from './features/auth/Login'
 import DiagramaERModal from './features/diagrama/DiagramaERModal'
+import CalificacionesModal from './features/notas/CalificacionesModal'
 import Historial from './features/historial/Historial'
 import Horario from './features/horario/Horario'
 import Dashboard from './features/malla/Dashboard'
@@ -17,7 +18,7 @@ const navItems = [
   ['/historial', 'Historial Académico', '📜'],
 ]
 
-function Shell({ alumno, onLogout, onAlumnoUpdated, onOpenDiagramaER, onOpenAlumnos }) {
+function Shell({ alumno, onLogout, onAlumnoUpdated, onOpenDiagramaER, onOpenAlumnos, onOpenNotas }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const toggleMenu = () => setMenuOpen((prev) => !prev)
@@ -25,13 +26,14 @@ function Shell({ alumno, onLogout, onAlumnoUpdated, onOpenDiagramaER, onOpenAlum
 
   return (
     <div className="unfv-app-layout">
-      {/* Barra superior oficial UNFV (Temporizador, Usuario, Salir, Diagrama E-R, Alumnos) */}
+      {/* Barra superior oficial UNFV (Temporizador, Usuario, Salir, Diagrama E-R, Alumnos, Notas) */}
       <TopBar
         alumno={alumno}
         onLogout={onLogout}
         onToggleMenu={toggleMenu}
         onOpenDiagramaER={onOpenDiagramaER}
         onOpenAlumnos={onOpenAlumnos}
+        onOpenNotas={onOpenNotas}
       />
 
       {/* Menú lateral desplegable (Drawer) */}
@@ -119,6 +121,7 @@ export default function App() {
   const [checking, setChecking] = useState(true)
   const [diagramaOpen, setDiagramaOpen] = useState(false)
   const [alumnosOpen, setAlumnosOpen] = useState(false)
+  const [notasOpen, setNotasOpen] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -185,16 +188,27 @@ export default function App() {
           onAlumnoUpdated={handleAlumnoUpdated}
           onOpenDiagramaER={() => setDiagramaOpen(true)}
           onOpenAlumnos={() => setAlumnosOpen(true)}
+          onOpenNotas={() => setNotasOpen(true)}
         />
       )}
 
-      {/* Modales globales de Diagrama E-R y Gestión de Alumnos */}
+      {/* Modales globales de Diagrama E-R, Gestión de Alumnos y Calificaciones */}
       <DiagramaERModal isOpen={diagramaOpen} onClose={() => setDiagramaOpen(false)} />
       <RegistroAlumnoModal
         isOpen={alumnosOpen}
         onClose={() => setAlumnosOpen(false)}
         onLoginAs={handleLoginAs}
       />
+      {alumno && (
+        <CalificacionesModal
+          isOpen={notasOpen}
+          onClose={() => setNotasOpen(false)}
+          alumno={alumno}
+          onNotasUpdated={() => {
+            // Se puede emitir actualización si se requiere
+          }}
+        />
+      )}
     </>
   )
 }

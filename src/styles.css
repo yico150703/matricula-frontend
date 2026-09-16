@@ -939,6 +939,44 @@ button:disabled {
   transform: translateY(-1px);
 }
 
+.btn-choose-section-yellow:disabled,
+.btn-choose-section-yellow.disabled {
+  background: #cbd5e1 !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+  opacity: 0.7;
+}
+
+.prereq-badge-blocked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.prereq-badge-approved {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
 /* =========================================================
    8. BARRA DE RESUMEN DE CRÉDITOS Y BOTÓN (IMAGEN 4)
    ========================================================= */
@@ -1238,8 +1276,37 @@ button:disabled {
 /* =========================================================
    11. PANTALLA DE LOGIN
    ========================================================= */
-.login-layout {
+.login-wrapper {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #e7f1fa;
+}
+
+.login-top-logo-bar {
+  background: #ffffff;
+  padding: 0.85rem 2.5rem;
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid #dbeafe;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+}
+
+.unfv-official-logo {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+}
+
+.login-card-mini-logo {
+  max-width: 210px;
+  height: auto;
+  object-fit: contain;
+}
+
+.login-layout {
+  flex: 1;
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   background: #e7f1fa;
@@ -1344,12 +1411,22 @@ button:disabled {
   font-weight: 600;
 }
 
+.alert-box-success {
+  color: #166534;
+  background: #dcfce7;
+  border-left: 4px solid #22c55e;
+  padding: 0.9rem 1.2rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
 /* =========================================================
    12. ESTILOS DE MALLA, HORARIO, HISTORIAL
    ========================================================= */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -1368,6 +1445,7 @@ button:disabled {
 }
 
 .summary.aprobado { border-top: 4px solid #198754; }
+.summary.desaprobado { border-top: 4px solid #dc2626; }
 .summary.en_curso { border-top: 4px solid #1479c9; }
 .summary.disponible { border-top: 4px solid #e2a414; }
 .summary.bloqueado_por_prerrequisito { border-top: 4px solid #8190a3; }
@@ -1394,6 +1472,7 @@ button:disabled {
 }
 
 .legend .aprobado { background: #198754; }
+.legend .desaprobado { background: #dc2626; }
 .legend .en_curso { background: #1479c9; }
 .legend .disponible { background: #e2a414; }
 .legend .bloqueado_por_prerrequisito { background: #8190a3; }
@@ -1500,7 +1579,7 @@ button:disabled {
 
 .history-head, .history-row {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) 100px 110px 80px;
+  grid-template-columns: minmax(260px, 1fr) 100px 130px minmax(180px, 220px);
   gap: 0.8rem;
   padding: 0.8rem;
   border-bottom: 1px solid #edf0f4;
@@ -1518,6 +1597,37 @@ button:disabled {
 
 .grade.passed { color: #16a34a; font-weight: 800; }
 .grade.failed { color: #dc2626; font-weight: 800; }
+
+.history-grade-editor {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.history-grade-input {
+  width: 68px;
+  padding: 0.4rem 0.45rem;
+  border: 1px solid var(--unfv-border);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.history-grade-save {
+  border: 0;
+  border-radius: 6px;
+  background: var(--unfv-primary);
+  color: #fff;
+  padding: 0.42rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.history-grade-save:disabled,
+.history-grade-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 
 .centered {
   min-height: 100vh;

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { matriculaApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
 
-const labels = { aprobado: 'Aprobado', en_curso: 'En curso', disponible: 'Disponible', bloqueado_por_prerrequisito: 'Bloqueado' }
+const labels = { aprobado: 'Aprobado', desaprobado: 'Desaprobado', en_curso: 'En curso', disponible: 'Disponible', bloqueado_por_prerrequisito: 'Bloqueado' }
 
 export default function Dashboard({ alumno }) {
   const [data, setData] = useState(null), [error, setError] = useState(null)
