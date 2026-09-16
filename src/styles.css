@@ -4,17 +4,18 @@
    ========================================================= */
 
 :root {
-  --unfv-topbar-bg: #54729c;
+  /* === PALETA INSTITUCIONAL NARANJA UNFV === */
+  --unfv-topbar-bg: #c05c10;       /* naranja oscuro UNFV */
   --unfv-topbar-text: #ffffff;
-  --unfv-primary: #0f4c81;
-  --unfv-primary-hover: #0a365c;
-  --unfv-blue-title: #103b70;
-  --unfv-page-bg: #e5edf6;
+  --unfv-primary: #c2541a;         /* naranja principal */
+  --unfv-primary-hover: #9a3e0e;   /* naranja más oscuro */
+  --unfv-blue-title: #7c2d05;      /* marrón-naranja para títulos */
+  --unfv-page-bg: #fdf3ec;         /* fondo cálido suave */
   --unfv-card-bg: #ffffff;
-  --unfv-box-bg: #eceff6;
-  --unfv-border: #d4dce8;
+  --unfv-box-bg: #fff0e6;          /* caja con tinte naranja */
+  --unfv-border: #f0cbb0;
   --unfv-text-dark: #1e293b;
-  --unfv-text-muted: #5a6b82;
+  --unfv-text-muted: #7a5c4a;
 
   --unfv-badge-student-bg: #ffedd5;
   --unfv-badge-student-text: #c2410c;
@@ -27,8 +28,8 @@
   --unfv-yellow-btn: #f59e0b;
   --unfv-yellow-btn-hover: #d97706;
 
-  --unfv-credit-box-bg: #dbeafe;
-  --unfv-credit-box-text: #1e40af;
+  --unfv-credit-box-bg: #fff0e6;
+  --unfv-credit-box-text: #92400e;
 
   font-family: 'Segoe UI', Inter, system-ui, -apple-system, sans-serif;
   color: var(--unfv-text-dark);
@@ -159,7 +160,7 @@ button:disabled {
   left: 0;
   bottom: 0;
   width: 290px;
-  background: #0d2744;
+  background: #3d1a06;
   color: #e2e8f0;
   z-index: 110;
   display: flex;
@@ -188,7 +189,7 @@ button:disabled {
 
 .drawer-brand-sub {
   font-size: 0.75rem;
-  color: #93c5fd;
+  color: #fdba74;
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -320,8 +321,8 @@ button:disabled {
 
 .selector-badge {
   display: inline-block;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: #ffedd5;
+  color: #c2410c;
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -388,14 +389,14 @@ button:disabled {
 }
 
 .plan-option-card:hover {
-  border-color: #93c5fd;
-  background: #f8fafc;
+  border-color: #fdba74;
+  background: #fff7ed;
 }
 
 .plan-option-card.selected {
-  border-color: #0284c7;
-  background: #f0f9ff;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+  border-color: #ea580c;
+  background: #fff7ed;
+  box-shadow: 0 4px 14px rgba(194, 84, 26, 0.15);
 }
 
 .plan-card-top {
@@ -503,18 +504,18 @@ button:disabled {
 }
 
 .ciclo-btn:hover {
-  background: #f0f7ff;
-  border-color: #0284c7;
+  background: #fff7ed;
+  border-color: #ea580c;
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);
+  box-shadow: 0 4px 10px rgba(194, 84, 26, 0.15);
 }
 
 .ciclo-btn.active,
 .ciclo-btn.active:hover {
-  background: #0f3b60 !important;
+  background: #c2541a !important;
   color: #ffffff !important;
-  border-color: #0f3b60 !important;
-  box-shadow: 0 4px 14px rgba(15, 59, 96, 0.35);
+  border-color: #c2541a !important;
+  box-shadow: 0 4px 14px rgba(194, 84, 26, 0.35);
   transform: translateY(-2px);
 }
 
@@ -524,7 +525,7 @@ button:disabled {
 }
 
 .ciclo-btn.active small {
-  color: #93c5fd !important;
+  color: #fed7aa !important;
   font-weight: 700;
 }
 
@@ -545,17 +546,17 @@ button:disabled {
 }
 
 .btn-continue-matricula {
-  background: #1d4ed8;
+  background: #c2541a;
   color: white;
   padding: 0.95rem 2.5rem;
   font-size: 1.05rem;
   font-weight: 700;
   border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.25);
+  box-shadow: 0 4px 14px rgba(194, 84, 26, 0.3);
 }
 
 .btn-continue-matricula:hover {
-  background: #1e40af;
+  background: #9a3e0e;
   transform: translateY(-1px);
 }
 
@@ -609,7 +610,7 @@ button:disabled {
 
 .btn-secondary-link {
   background: transparent;
-  color: #0284c7;
+  color: #c2541a;
   font-weight: 700;
   font-size: 0.9rem;
   padding: 0.5rem 0;
@@ -660,13 +661,13 @@ button:disabled {
 
 .box-label {
   font-size: 0.85rem;
-  color: #1e3a8a;
+  color: #7c2d05;
   font-weight: 600;
 }
 
 .box-value {
   font-size: 1.05rem;
-  color: #1e3a8a;
+  color: #7c2d05;
 }
 
 .info-action-container {
@@ -676,17 +677,17 @@ button:disabled {
 }
 
 .btn-start-matricula {
-  background: #1d4ed8;
+  background: #c2541a;
   color: white;
   font-weight: 700;
   font-size: 1.05rem;
   padding: 0.85rem 2.2rem;
   border-radius: 9px;
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+  box-shadow: 0 4px 12px rgba(194, 84, 26, 0.3);
 }
 
 .btn-start-matricula:hover {
-  background: #1e40af;
+  background: #9a3e0e;
 }
 
 /* =========================================================
@@ -739,12 +740,12 @@ button:disabled {
 .student-box-title {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #1e3a8a;
+  color: #7c2d05;
 }
 
 .student-box-data {
   font-size: 0.95rem;
-  color: #1e3a8a;
+  color: #7c2d05;
   font-weight: 600;
 }
 
@@ -787,9 +788,9 @@ button:disabled {
 }
 
 .chip-ciclo.selected {
-  background: var(--unfv-blue-title);
+  background: var(--unfv-primary);
   color: white;
-  border-color: var(--unfv-blue-title);
+  border-color: var(--unfv-primary);
 }
 
 .btn-cambiar-plan {
@@ -997,7 +998,7 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #bfdbfe;
+  border: 1px solid #fdba74;
 }
 
 .credit-pill-box.over-limit {
@@ -1071,7 +1072,7 @@ button:disabled {
 }
 
 .modal-header h3 span {
-  color: var(--unfv-blue-title);
+  color: var(--unfv-primary);
   font-weight: 700;
 }
 
@@ -1110,8 +1111,8 @@ button:disabled {
 }
 
 .modal-section-card:hover {
-  border-color: #93c5fd;
-  background: #f8fafc;
+  border-color: #fdba74;
+  background: #fff7ed;
 }
 
 .modal-section-card.selected {
@@ -1148,7 +1149,7 @@ button:disabled {
 }
 
 .btn-elegir:hover {
-  background: #3b567b;
+  background: #9a3e0e;
 }
 
 .btn-quitar {
@@ -1246,8 +1247,8 @@ button:disabled {
 }
 
 .seccion-pill {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: #ffedd5;
+  color: #c2410c;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   font-weight: 700;
@@ -1280,7 +1281,7 @@ button:disabled {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #e7f1fa;
+  background: #fdf3ec;
 }
 
 .login-top-logo-bar {
@@ -1288,8 +1289,8 @@ button:disabled {
   padding: 0.85rem 2.5rem;
   display: flex;
   align-items: center;
-  border-bottom: 2px solid #dbeafe;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  border-bottom: 2px solid #fed7aa;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
   z-index: 10;
 }
 
@@ -1309,12 +1310,12 @@ button:disabled {
   flex: 1;
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
-  background: #e7f1fa;
+  background: #fdf3ec;
 }
 
 .login-intro {
   padding: clamp(3rem, 10vw, 9rem);
-  background: linear-gradient(130deg, #042b56, #0871b9);
+  background: linear-gradient(130deg, #6b1a03, #c2541a);
   color: white;
   display: flex;
   flex-direction: column;
@@ -1322,7 +1323,7 @@ button:disabled {
 }
 
 .login-intro .eyebrow {
-  color: #a9d8fa;
+  color: #fed7aa;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   font-weight: 800;
@@ -1337,7 +1338,7 @@ button:disabled {
 
 .login-intro p:last-child {
   max-width: 480px;
-  color: #d3eafa;
+  color: #ffedd5;
   line-height: 1.7;
 }
 
@@ -1369,14 +1370,14 @@ button:disabled {
 
 .login-card input {
   padding: 0.8rem;
-  border: 1.5px solid #cbd5e1;
+  border: 1.5px solid #fed7aa;
   border-radius: 8px;
   transition: border-color 0.15s ease;
 }
 
 .login-card input:focus {
   outline: none;
-  border-color: #0284c7;
+  border-color: #c2541a;
 }
 
 .login-card button {
@@ -1446,7 +1447,7 @@ button:disabled {
 
 .summary.aprobado { border-top: 4px solid #198754; }
 .summary.desaprobado { border-top: 4px solid #dc2626; }
-.summary.en_curso { border-top: 4px solid #1479c9; }
+.summary.en_curso { border-top: 4px solid #ea580c; }
 .summary.disponible { border-top: 4px solid #e2a414; }
 .summary.bloqueado_por_prerrequisito { border-top: 4px solid #8190a3; }
 
@@ -1473,7 +1474,7 @@ button:disabled {
 
 .legend .aprobado { background: #198754; }
 .legend .desaprobado { background: #dc2626; }
-.legend .en_curso { background: #1479c9; }
+.legend .en_curso { background: #ea580c; }
 .legend .disponible { background: #e2a414; }
 .legend .bloqueado_por_prerrequisito { background: #8190a3; }
 
@@ -1530,7 +1531,7 @@ button:disabled {
 }
 
 .course.aprobado { border-color: #198754; background: #ecfdf5; }
-.course.en_curso { border-color: #1479c9; background: #f0f9ff; }
+.course.en_curso { border-color: #ea580c; background: #fff7ed; }
 .course.disponible { border-color: #e2a414; background: #fffbeb; }
 .course.bloqueado_por_prerrequisito { border-color: #8190a3; }
 
@@ -1561,8 +1562,8 @@ button:disabled {
 .event {
   display: grid;
   gap: 0.35rem;
-  background: #e8f4ff;
-  border-left: 4px solid #1479c9;
+  background: #fff7ed;
+  border-left: 4px solid #ea580c;
   border-radius: 6px;
   padding: 0.7rem;
   margin-bottom: 0.7rem;
@@ -1621,6 +1622,7 @@ button:disabled {
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.18s ease;
 }
 
 .history-grade-save:disabled,
@@ -1700,14 +1702,14 @@ button:disabled {
 }
 
 .periodo-card:hover {
-  border-color: #93c5fd;
+  border-color: #fdba74;
   background: #ffffff;
 }
 
 .periodo-card.selected {
-  border-color: #0284c7;
-  background: #f0f9ff;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+  border-color: #c2541a;
+  background: #fff7ed;
+  box-shadow: 0 4px 14px rgba(194, 84, 26, 0.15);
 }
 
 .periodo-tag-badge {
@@ -1715,8 +1717,8 @@ button:disabled {
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
-  background: #e0f2fe;
-  color: #0284c7;
+  background: #ffedd5;
+  color: #c2410c;
   padding: 0.2rem 0.6rem;
   border-radius: 6px;
   margin-bottom: 0.5rem;
@@ -1725,7 +1727,7 @@ button:disabled {
 .periodo-card h4 {
   margin: 0 0 0.3rem;
   font-size: 1.2rem;
-  color: var(--unfv-blue-title);
+  color: var(--unfv-primary);
 }
 
 .periodo-card p {
@@ -1741,8 +1743,8 @@ button:disabled {
 
 .ciclo-regla-note {
   font-size: 0.9rem;
-  color: #1e3a8a;
-  background: #eef4fb;
+  color: #7c2d05;
+  background: #fff7ed;
   padding: 0.6rem 1rem;
   border-radius: 8px;
   margin: 0 0 1rem;
@@ -1750,8 +1752,8 @@ button:disabled {
 
 /* Banner de Ciclo Seleccionado en Registro de Matrícula */
 .ciclo-active-banner {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1.5px solid #7dd3fc;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1.5px solid #fdba74;
   border-radius: 12px;
   padding: 1rem 1.4rem;
   display: flex;
@@ -1769,14 +1771,14 @@ button:disabled {
 }
 
 .ciclo-pill-badge {
-  background: #0f3b60;
+  background: #c2541a;
   color: #ffffff;
   font-weight: 800;
   font-size: 0.95rem;
   padding: 0.45rem 1.1rem;
   border-radius: 8px;
   letter-spacing: 0.03em;
-  box-shadow: 0 2px 8px rgba(15, 59, 96, 0.25);
+  box-shadow: 0 2px 8px rgba(194, 84, 26, 0.3);
   white-space: nowrap;
 }
 
@@ -1784,17 +1786,17 @@ button:disabled {
   margin: 0 0 0.2rem 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0f3b60;
+  color: #7c2d05;
 }
 
 .ciclo-banner-desc {
   margin: 0;
   font-size: 0.86rem;
-  color: #0369a1;
+  color: #c2541a;
 }
 
 ::selection {
-  background: #0f3b60;
+  background: #c2541a;
   color: #ffffff;
 }
 
@@ -1824,7 +1826,7 @@ button:disabled {
 
 .schedule-more-sections {
   font-size: 0.74rem;
-  color: #0284c7;
+  color: #c2541a;
   font-weight: 600;
 }
 
@@ -1844,8 +1846,8 @@ button:disabled {
 .badge-periodo-tipo {
   font-size: 0.78rem;
   font-weight: 700;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #ffedd5;
+  color: #c2410c;
   padding: 0.25rem 0.65rem;
   border-radius: 999px;
 }
@@ -1865,7 +1867,7 @@ button:disabled {
 }
 
 .btn-download-pdf {
-  background: #0f4c81;
+  background: #c2541a;
   color: white;
   padding: 0.8rem 1.8rem;
   font-weight: 700;
@@ -1873,18 +1875,18 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(15, 76, 129, 0.25);
+  box-shadow: 0 4px 12px rgba(194, 84, 26, 0.3);
 }
 
 .btn-download-pdf:hover {
-  background: #0a365c;
+  background: #9a3e0e;
   transform: translateY(-1px);
 }
 
 .btn-download-pdf-outline {
   background: white;
-  color: #0f4c81;
-  border: 2px solid #0f4c81;
+  color: #c2541a;
+  border: 2px solid #c2541a;
   padding: 0.9rem 1.8rem;
   font-weight: 700;
   font-size: 1.05rem;
@@ -1892,10 +1894,10 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 2px 8px rgba(15, 76, 129, 0.1);
+  box-shadow: 0 2px 8px rgba(194, 84, 26, 0.12);
 }
 
 .btn-download-pdf-outline:hover {
-  background: #f0f7ff;
+  background: #fff7ed;
   transform: translateY(-1px);
 }
