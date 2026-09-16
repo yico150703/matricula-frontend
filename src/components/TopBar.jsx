@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 
-export default function TopBar({ alumno, onLogout, onToggleMenu }) {
+export default function TopBar({
+  alumno,
+  onLogout,
+  onToggleMenu,
+  onOpenDiagramaER,
+  onOpenAlumnos,
+}) {
   // Temporizador de 15 minutos en cuenta regresiva como en las capturas (00:14:59)
   const [secondsLeft, setSecondsLeft] = useState(15 * 60)
 
@@ -18,9 +24,10 @@ export default function TopBar({ alumno, onLogout, onToggleMenu }) {
     return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
   }
 
-  const nombreCompleto = alumno
-    ? `${alumno.apellidos.toUpperCase()}, ${alumno.nombres.toUpperCase()}`
-    : 'ESTUDIANTE'
+  const nombreCompleto =
+    alumno && alumno.apellidos && alumno.nombres
+      ? `${alumno.apellidos.toUpperCase()}, ${alumno.nombres.toUpperCase()}`
+      : alumno?.nombres || alumno?.cod_alumno || 'ESTUDIANTE'
 
   return (
     <header className="unfv-topbar">
