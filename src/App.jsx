@@ -125,14 +125,9 @@ export default function App() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!localStorage.getItem('matricula_token')) {
-      return setChecking(false)
-    }
-    authApi
-      .me()
-      .then(({ alumno: profile }) => setAlumno(profile))
-      .catch(() => localStorage.removeItem('matricula_token'))
-      .finally(() => setChecking(false))
+    // Siempre iniciar desde el login: limpiar sesión previa al cargar la app
+    localStorage.removeItem('matricula_token')
+    setChecking(false)
   }, [])
 
   const loggedIn = (profile, token) => {
