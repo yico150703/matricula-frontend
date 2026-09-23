@@ -1,10 +1,15 @@
 # Matrícula UNFV — Frontend
 
-SPA React + Vite para el alumno: inicio de sesión, avance de malla, matrícula, horario e historial. El código está organizado por funcionalidades en `src/features` y todo acceso HTTP pasa por `src/api/client.js`.
+SPA React + Vite con dos roles. El código está organizado por funcionalidades en `src/features` y todo acceso HTTP pasa por `src/api/client.js`.
+
+- **Alumno** (`/matricula`, `/malla`, `/horario`, `/historial`, `/configuracion`): se matricula y retira cursos, consulta su avance, horario e historial (solo lectura), descarga su ficha PDF y cambia su contraseña.
+- **Administrador** (`/admin`, `/admin/alumnos`, `/admin/notas`, `/configuracion`): registra alumnos con solo código, nombres, apellidos y plan (el correo `código@unfv.edu.pe` y la contraseña inicial = código se generan solos), edita, desactiva, restablece contraseñas, registra notas y abre o cierra períodos.
+
+Primer ingreso: el alumno entra con su código como usuario y contraseña, y el sistema le obliga a cambiarla. El administrador entra con `admin` y la contraseña inicial configurada en el backend. La sesión se mantiene al recargar y se cierra tras 15 minutos de inactividad.
 
 ## Desarrollo local
 
-1. Instala Node.js 20 o superior.
+1. Instala Node.js 20.19 o superior.
 2. Ejecuta `npm install`.
 3. Copia `.env.example` a `.env.local` y establece `VITE_API_URL=http://localhost:5000/api`.
 4. Inicia con `npm run dev`.

@@ -5,6 +5,7 @@ export function descargarFichaMatriculaPDF({
   alumno,
   periodo,
   planNombre,
+  nroMatricula,
   secciones,
   totalCreditos,
   totalAsignaturas,
@@ -58,8 +59,8 @@ export function descargarFichaMatriculaPDF({
 
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(20, 30, 45)
-  doc.text(alumno?.cod_alumno || '20260001', 54, 44)
-  doc.text(`${alumno?.apellidos?.toUpperCase() || 'PÉREZ'}, ${alumno?.nombres?.toUpperCase() || 'ANA'}`, 54, 50)
+  doc.text(String(alumno?.cod_alumno || ''), 54, 44)
+  doc.text(`${(alumno?.apellidos || '').toUpperCase()}, ${(alumno?.nombres || '').toUpperCase()}`, 54, 50)
   doc.text('FIIS - Facultad de Ingeniería Industrial y de Sistemas', 54, 56)
   doc.text(planNombre || 'Malla Curricular Vigente 2019', 54, 62)
   doc.text(fechaEmision, 54, 68)
@@ -67,13 +68,13 @@ export function descargarFichaMatriculaPDF({
   doc.setFont('helvetica', 'normal')
   doc.text('Período Académico:', 125, 44)
   doc.text('Programa:', 125, 50)
-  doc.text('Tope de Créditos:', 125, 56)
+  doc.text('N° Matrícula:', 125, 56)
   doc.text('Estado:', 125, 62)
 
   doc.setFont('helvetica', 'bold')
   doc.text(codPeriodo, 160, 44)
   doc.text('Ing. de Sistemas', 160, 50)
-  doc.text('26.0 créditos', 160, 56)
+  doc.text(String(nroMatricula || '-'), 160, 56)
   doc.setTextColor(22, 101, 52) // Verde
   doc.text('CONFIRMADA', 160, 62)
 
@@ -82,7 +83,7 @@ export function descargarFichaMatriculaPDF({
     const curso = sec.curso || {}
     const dia = diasSemana[sec.dia] || ''
     const horario = `${dia} ${sec.hora_inicio || ''}–${sec.hora_fin || ''}`
-    const aula = sec.aula ? `Aula ${sec.aula}` : 'FIIS-101'
+    const aula = sec.aula ? `Aula ${sec.aula}` : ''
     const docente = sec.docente || 'Por asignar'
 
     return [
@@ -144,7 +145,7 @@ export function descargarFichaMatriculaPDF({
   doc.text('Condición: REGULAR', 155, finalY + 9)
 
   // 6. Pie de página institucional y código de verificación digital
-  const hashVerificacion = Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + ahora.getFullYear()
+  const hashVerificacion = `${alumno?.cod_alumno || ''}-${nroMatricula || 'PRE'}-${codPeriodo}`
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.5)

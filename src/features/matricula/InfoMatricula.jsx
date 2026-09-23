@@ -20,10 +20,9 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
     return `${y}-${m}-${d} ${h}:${min}:${s}`
   }
 
-  const codPeriodo = periodo?.cod_per_acad || '2026-1'
-  const is2026_1 = codPeriodo === '2026-1'
-  const fechaInicio = is2026_1 ? '16/03/2026 09:00:00' : '17/08/2026 09:00:00'
-  const fechaFin = is2026_1 ? '18/03/2026 23:59:00' : '19/08/2026 23:59:00'
+  const codPeriodo = periodo?.cod_per_acad || '—'
+  const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '—')
+  const abierto = periodo?.estado === 'en_curso'
 
   return (
     <div className="info-matricula-container">
@@ -66,8 +65,8 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
 
         {/* Columna Derecha: Estado de Matrícula y Acceso */}
         <div className="info-card-right">
-          <div className="status-banner-enabled">
-            MATRICULA INTERNET HABILITADA · FIIS
+          <div className={abierto ? 'status-banner-enabled' : 'status-banner-disabled'}>
+            {abierto ? 'MATRÍCULA POR INTERNET HABILITADA · FIIS' : 'MATRÍCULA CERRADA PARA ESTE PERÍODO'}
           </div>
 
           <div className="status-grid-boxes">
@@ -82,13 +81,13 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
             </div>
 
             <div className="info-box">
-              <span className="box-label">Inicio de Matrícula</span>
-              <strong className="box-value">{fechaInicio}</strong>
+              <span className="box-label">Inicio del período</span>
+              <strong className="box-value">{fmt(periodo?.fecha_inicio)}</strong>
             </div>
 
             <div className="info-box">
-              <span className="box-label">Fin de Matrícula</span>
-              <strong className="box-value">{fechaFin}</strong>
+              <span className="box-label">Fin del período</span>
+              <strong className="box-value">{fmt(periodo?.fecha_fin)}</strong>
             </div>
           </div>
 
@@ -97,6 +96,7 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
               type="button"
               className="btn-start-matricula"
               onClick={onIniciar}
+              disabled={!abierto}
             >
               Iniciar Matrícula
             </button>

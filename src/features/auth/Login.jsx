@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { authApi } from '../../api/client'
 import unfvLogo from '../../assets/logo-unfv.png'
 
-export default function Login({ onLoggedIn, onOpenAlumnos, onOpenDiagramaER }) {
-  const [email, setEmail] = useState('')
+export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
+  const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
 
@@ -13,8 +14,8 @@ export default function Login({ onLoggedIn, onOpenAlumnos, onOpenDiagramaER }) {
     setError('')
     setSending(true)
     try {
-      const result = await authApi.login(email, password)
-      onLoggedIn(result.alumno, result.access_token)
+      const result = await authApi.login(usuario.trim(), password)
+      onLoggedIn(result.usuario || result.alumno, result.rol || 'alumno', result.access_token)
     } catch (err) {
       setError(err.detail || 'No fue posible iniciar sesión.')
     } finally {
@@ -22,140 +23,81 @@ export default function Login({ onLoggedIn, onOpenAlumnos, onOpenDiagramaER }) {
     }
   }
 
-  const handleFill = (userEmail, userPass) => {
-    setEmail(userEmail)
-    setPassword(userPass)
-  }
-
   return (
     <div className="login-wrapper">
-      {/* Logo oficial UNFV encima de todo en el Login */}
       <header className="login-top-logo-bar">
-        <img
-          src={unfvLogo}
-          alt="Universidad Nacional Federico Villarreal"
-          className="unfv-official-logo"
-        />
+        <img src={unfvLogo} alt="Universidad Nacional Federico Villarreal" className="unfv-official-logo" />
       </header>
 
       <div className="login-layout">
         <section className="login-intro">
           <p className="eyebrow">UNFV · FIIS · E.P. Ingeniería de Sistemas</p>
-          <h1>Sistema de Matricula UNFV</h1>
+          <h1>Sistema de Matrícula UNFV</h1>
           <p>
-            Consulta tu avance curricular, selecciona secciones con horarios y docentes, y organiza tu matrícula académica en un solo lugar.
+            Consulta tu avance curricular, selecciona secciones con horarios y docentes, y organiza tu matrícula
+            académica en un solo lugar.
           </p>
-          
           {onOpenDiagramaER && (
-            <div style={{ marginTop: '1.5rem' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={onOpenDiagramaER}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  color: '#fff',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '8px',
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                📊 Ver Diagrama Entidad-Relación (DER)
+            <div>
+              <button type="button" className="btn-ghost-light" onClick={onOpenDiagramaER}>
+                📊 Ver Diagrama Entidad-Relación
               </button>
             </div>
           )}
         </section>
 
         <form className="login-card" onSubmit={submit}>
-          <div style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
-            <img
-              src={unfvLogo}
-              alt="Logo UNFV"
-              className="login-card-mini-logo"
-              style={{ margin: '0 auto 0.75rem auto' }}
-            />
+          <div style={{ textAlign: 'center' }}>
+            <img src={unfvLogo} alt="" className="login-card-mini-logo" />
           </div>
           <h2>Iniciar sesión</h2>
-        <label>
-          Correo institucional
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            placeholder="alumno@unfv.edu.pe"
-          />
-        </label>
-        <label>
-          Contraseña
-          <input
-            required
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            placeholder="••••••••"
-          />
-        </label>
-        {error && <p className="form-error">{error}</p>}
-        <button disabled={sending} className="btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
-          {sending ? 'Ingresando…' : 'Ingresar'}
-        </button>
 
-        {/* Acceso rápido a registro de alumnos en BD */}
-        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={onOpenAlumnos}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#0284c7',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              textDecoration: 'underline',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-            }}
-          >
-            ➕ ¿Nuevo estudiante? Agregar alumno a la Base de Datos
+          {notice && <p className="form-notice">{notice}</p>}
+
+          <label>
+            Código de alumno o usuario
+            <input
+              required
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              autoComplete="username"
+              placeholder="Ej. 2023012345 o 2023012345@unfv.edu.pe"
+              autoFocus
+            />
+          </label>
+          <label>
+            Contraseña
+            <div className="password-field">
+              <input
+                required
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+          </label>
+          {error && <p className="form-error">{error}</p>}
+          <button disabled={sending} className="btn-primary login-submit">
+            {sending ? 'Ingresando…' : 'Ingresar'}
           </button>
-        </div>
 
-        {/* Credenciales de demostración */}
-        <div style={{ marginTop: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.75rem', color: '#64748b' }}>
-          <div style={{ fontWeight: 600, marginBottom: '0.35rem', color: '#334155' }}>
-            Estudiantes disponibles para prueba rápida:
+          <div className="login-help">
+            <strong>¿Primer ingreso?</strong> Tu usuario y tu contraseña inicial son tu <b>código de alumno</b>. El
+            sistema te pedirá cambiar la contraseña al entrar. Si la olvidaste, solicita el restablecimiento a la Oficina
+            de Matrícula.
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <span
-              style={{ cursor: 'pointer', color: '#0284c7' }}
-              onClick={() => handleFill('alumno@unfv.edu.pe', 'Cambiar123!')}
-              title="Click para autocompletar"
-            >
-              👉 <strong>Ana Pérez</strong>: <code>alumno@unfv.edu.pe</code> / <code>Cambiar123!</code>
-            </span>
-            <span
-              style={{ cursor: 'pointer', color: '#0284c7' }}
-              onClick={() => handleFill('cgomez@unfv.edu.pe', 'Password123!')}
-              title="Click para autocompletar"
-            >
-              👉 <strong>Carlos Gómez</strong>: <code>cgomez@unfv.edu.pe</code> / <code>Password123!</code>
-            </span>
-          </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
-  </div>
   )
 }
-

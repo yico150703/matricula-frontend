@@ -15,15 +15,21 @@ export default function Horario({ alumno }) {
       return []
     }
   })
-  const [autoHideApproved, setAutoHideApproved] = useState(true)
+  const [autoHideApproved, setAutoHideApproved] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [periodos, setPeriodos] = useState([])
+  const [periodoId, setPeriodoId] = useState(null)
 
   const load = useCallback(async () => {
     try {
       setError(null)
       const periods = await matriculaApi.periodos()
-      const current = periods.periodos.find((item) => item.estado === 'en_curso') || periods.periodos[0]
+      const list = periods.periodos || []
+      setPeriodos(list)
+      const current =
+        list.find((item) => item.id_periodo === periodoId) || list.find((item) => item.estado === 'en_curso') || list[0]
       if (!current) return setData({ period: null, details: [] })
+      if (current.id_periodo !== periodoId) setPeriodoId(current.id_periodo)
 
       try {
         const response = await matriculaApi.actual(alumno.cod_alumno, current.id_periodo)
@@ -41,7 +47,7 @@ export default function Horario({ alumno }) {
     } catch (err) {
       setError(err)
     }
-  }, [alumno.cod_alumno])
+  }, [alumno.cod_alumno, periodoId])
 
   useEffect(() => {
     load()
@@ -76,7 +82,7 @@ export default function Horario({ alumno }) {
 
   if (error) return <ErrorState error={error} retry={load} />
   if (!data) return <Loading />
-  if (!data.period) return <Empty>No hay período académico en curso.</Empty>
+  if (!data.period) return <Empty>No hay períodos académicos configurados.</Empty>
 
   // Filtrado de cursos para el calendario semanal
   const visibleDetails = data.details.filter((item) => {
@@ -105,6 +111,23 @@ export default function Horario({ alumno }) {
 
         {/* Controles de Calendario */}
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {periodos.length > 1 && (
+            <select
+              className="select-input"
+              value={periodoId ?? ''}
+              onChange={(e) => {
+                setData(null)
+                setPeriodoId(Number(e.target.value))
+              }}
+              aria-label="Período académico"
+            >
+              {periodos.map((p) => (
+                <option key={p.id_periodo} value={p.id_periodo}>
+                  Período {p.cod_per_acad}
+                </option>
+              ))}
+            </select>
+          )}
           {approvedCount > 0 && (
             <label
               style={{

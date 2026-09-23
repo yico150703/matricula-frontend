@@ -1,59 +1,67 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import { authApi } from './api/client'
+import { SESSION_EXPIRED_EVENT, authApi, session } from './api/client'
 import TopBar from './components/TopBar'
-import RegistroAlumnoModal from './features/alumnos/RegistroAlumnoModal'
+import useInactivityTimer from './components/useInactivityTimer'
+import AdminAlumnos from './features/admin/AdminAlumnos'
+import AdminDashboard from './features/admin/AdminDashboard'
+import AdminNotas from './features/admin/AdminNotas'
+import CambioPasswordObligatorio from './features/auth/CambioPasswordObligatorio'
 import Login from './features/auth/Login'
+import Configuracion from './features/configuracion/Configuracion'
 import DiagramaERModal from './features/diagrama/DiagramaERModal'
-import CalificacionesModal from './features/notas/CalificacionesModal'
 import Historial from './features/historial/Historial'
 import Horario from './features/horario/Horario'
 import Dashboard from './features/malla/Dashboard'
 import Matricula from './features/matricula/Matricula'
+import { planPorId } from './utils/academico'
 
-const navItems = [
-  ['/matricula', 'Registro de Matrícula', '📝'],
-  ['/malla', 'Mi Malla Curricular', '🗺️'],
-  ['/horario', 'Mi Horario', '📅'],
-  ['/historial', 'Historial Académico', '📜'],
-]
+const INACTIVIDAD_SEGUNDOS = 15 * 60
 
-function Shell({ alumno, onLogout, onAlumnoUpdated, onOpenDiagramaER, onOpenAlumnos, onOpenNotas }) {
+const NAV = {
+  alumno: [
+    ['/matricula', 'Registro de Matrícula', '📝'],
+    ['/malla', 'Mi Malla Curricular', '🗺️'],
+    ['/horario', 'Mi Horario', '📅'],
+    ['/historial', 'Historial Académico', '📜'],
+    ['/configuracion', 'Configuración de cuenta', '⚙️'],
+  ],
+  admin: [
+    ['/admin', 'Panel de control', '📊'],
+    ['/admin/alumnos', 'Gestión de alumnos', '👥'],
+    ['/admin/notas', 'Calificaciones', '🎯'],
+    ['/configuracion', 'Configuración de cuenta', '⚙️'],
+  ],
+}
+
+function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
   const [menuOpen, setMenuOpen] = useState(false)
-
-  const toggleMenu = () => setMenuOpen((prev) => !prev)
+  const [diagramaOpen, setDiagramaOpen] = useState(false)
   const closeMenu = () => setMenuOpen(false)
+  const isAdmin = rol === 'admin'
 
   return (
     <div className="unfv-app-layout">
-      {/* Barra superior oficial UNFV (Temporizador, Usuario, Salir, Diagrama E-R, Alumnos, Notas) */}
-      <TopBar
-        alumno={alumno}
-        onLogout={onLogout}
-        onToggleMenu={toggleMenu}
-        onOpenDiagramaER={onOpenDiagramaER}
-        onOpenAlumnos={onOpenAlumnos}
-        onOpenNotas={onOpenNotas}
-      />
+      <TopBar user={user} rol={rol} onLogout={onLogout} onToggleMenu={() => setMenuOpen((v) => !v)} secondsLeft={secondsLeft} />
 
-      {/* Menú lateral desplegable (Drawer) */}
       {menuOpen && <div className="drawer-backdrop" onClick={closeMenu} />}
-      <aside className={`unfv-drawer ${menuOpen ? 'open' : ''}`}>
+      <aside className={`unfv-drawer ${menuOpen ? 'open' : ''}`} aria-hidden={!menuOpen}>
         <div className="drawer-header">
           <div className="drawer-brand">
             <span className="drawer-brand-sub">UNFV · FIIS</span>
-            <strong>Ingeniería de Sistemas</strong>
+            <strong>{isAdmin ? 'Administración de Matrícula' : 'Ingeniería de Sistemas'}</strong>
           </div>
-          <button type="button" className="drawer-close-btn" onClick={closeMenu}>
+          <button type="button" className="drawer-close-btn" onClick={closeMenu} aria-label="Cerrar menú">
             ✕
           </button>
         </div>
 
         <nav className="drawer-nav">
-          {navItems.map(([to, label, icon]) => (
+          {NAV[rol].map(([to, label, icon]) => (
             <NavLink
               key={to}
               to={to}
+              end={to === '/admin'}
               className={({ isActive }) => `drawer-nav-item ${isActive ? 'active' : ''}`}
               onClick={closeMenu}
             >
@@ -61,149 +69,139 @@ function Shell({ alumno, onLogout, onAlumnoUpdated, onOpenDiagramaER, onOpenAlum
               <span className="nav-label">{label}</span>
             </NavLink>
           ))}
+          {isAdmin && (
+            <button
+              type="button"
+              className="drawer-nav-item drawer-nav-button"
+              onClick={() => {
+                closeMenu()
+                setDiagramaOpen(true)
+              }}
+            >
+              <span className="nav-icon">🧩</span>
+              <span className="nav-label">Diagrama E-R</span>
+            </button>
+          )}
         </nav>
-
-        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              closeMenu()
-              onOpenDiagramaER()
-            }}
-            style={{ width: '100%', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
-          >
-            📊 Diagrama E-R
-          </button>
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              closeMenu()
-              onOpenAlumnos()
-            }}
-            style={{ width: '100%', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
-          >
-            👥 Gestión Alumnos
-          </button>
-        </div>
 
         <div className="drawer-footer">
           <div className="drawer-student-info">
-            <span className="student-badge-status">● Matrícula Habilitada</span>
-            <small>Código: {alumno.cod_alumno}</small>
-            <small>Plan: {alumno.plan?.nombre || 'Ing. de Sistemas'}</small>
+            {isAdmin ? (
+              <>
+                <span className="student-badge-status">● Administrador</span>
+                <small>Usuario: {user.usuario}</small>
+              </>
+            ) : (
+              <>
+                <span className="student-badge-status">● Matrícula habilitada</span>
+                <small>Código: {user.cod_alumno}</small>
+                <small>{planPorId(user.id_plan).nombre}</small>
+              </>
+            )}
           </div>
           <button type="button" className="drawer-logout-btn" onClick={onLogout}>
-            Cerrar Sesión
+            Cerrar sesión
           </button>
         </div>
       </aside>
 
-      {/* Área principal de contenido */}
       <main className="unfv-main-content">
         <Routes>
-          <Route
-            path="/matricula"
-            element={<Matricula alumno={alumno} onAlumnoUpdated={onAlumnoUpdated} />}
-          />
-          <Route path="/malla" element={<Dashboard alumno={alumno} />} />
-          <Route path="/horario" element={<Horario alumno={alumno} />} />
-          <Route path="/historial" element={<Historial alumno={alumno} />} />
-          <Route path="/" element={<Navigate to="/matricula" replace />} />
-          <Route path="*" element={<Navigate to="/matricula" replace />} />
+          {isAdmin ? (
+            <>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/alumnos" element={<AdminAlumnos />} />
+              <Route path="/admin/notas" element={<AdminNotas />} />
+              <Route path="/configuracion" element={<Configuracion user={user} rol={rol} onUserUpdated={onUserUpdated} />} />
+              <Route path="*" element={<Navigate to="/admin" replace />} />
+            </>
+          ) : (
+            <>
+              <Route path="/matricula" element={<Matricula alumno={user} />} />
+              <Route path="/malla" element={<Dashboard alumno={user} />} />
+              <Route path="/horario" element={<Horario alumno={user} />} />
+              <Route path="/historial" element={<Historial alumno={user} />} />
+              <Route path="/configuracion" element={<Configuracion user={user} rol={rol} onUserUpdated={onUserUpdated} />} />
+              <Route path="*" element={<Navigate to="/matricula" replace />} />
+            </>
+          )}
         </Routes>
       </main>
+
+      <DiagramaERModal isOpen={diagramaOpen} onClose={() => setDiagramaOpen(false)} />
     </div>
   )
 }
 
 export default function App() {
-  const [alumno, setAlumno] = useState(null)
+  const [auth, setAuth] = useState(null) // { user, rol }
   const [checking, setChecking] = useState(true)
   const [diagramaOpen, setDiagramaOpen] = useState(false)
-  const [alumnosOpen, setAlumnosOpen] = useState(false)
-  const [notasOpen, setNotasOpen] = useState(false)
+  const [notice, setNotice] = useState('')
   const navigate = useNavigate()
 
+  const logout = useCallback(
+    (message = '') => {
+      session.clear()
+      setAuth(null)
+      setNotice(typeof message === 'string' ? message : '')
+      navigate('/login', { replace: true })
+    },
+    [navigate],
+  )
+
+  // Restaurar la sesión al recargar la página (el token dura 8 horas)
   useEffect(() => {
-    // Siempre iniciar desde el login: limpiar sesión previa al cargar la app
-    localStorage.removeItem('matricula_token')
-    setChecking(false)
+    if (!session.get()) {
+      setChecking(false)
+      return
+    }
+    authApi
+      .me()
+      .then((res) => setAuth({ user: res.usuario || res.alumno, rol: res.rol || 'alumno' }))
+      .catch(() => session.clear())
+      .finally(() => setChecking(false))
   }, [])
 
-  const loggedIn = (profile, token) => {
-    if (token) {
-      localStorage.setItem('matricula_token', token)
-    }
-    setAlumno(profile)
-    navigate('/matricula')
+  useEffect(() => {
+    const onExpired = () => logout('Tu sesión expiró. Vuelve a iniciar sesión.')
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired)
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired)
+  }, [logout])
+
+  const secondsLeft = useInactivityTimer(Boolean(auth), INACTIVIDAD_SEGUNDOS, () =>
+    logout('Se cerró la sesión por 15 minutos de inactividad.'),
+  )
+
+  const loggedIn = (user, rol, token) => {
+    session.set(token)
+    setNotice('')
+    setAuth({ user, rol })
+    navigate(rol === 'admin' ? '/admin' : '/matricula', { replace: true })
   }
 
-  const logout = () => {
-    localStorage.removeItem('matricula_token')
-    setAlumno(null)
-    navigate('/login')
-  }
-
-  const handleAlumnoUpdated = (updatedAlumno) => {
-    setAlumno(updatedAlumno)
-  }
-
-  const handleLoginAs = (targetStudent) => {
-    if (targetStudent.token) {
-      loggedIn(targetStudent, targetStudent.token)
-    } else {
-      // Si no tiene token directo, iniciamos sesión como el estudiante
-      setAlumno(targetStudent)
-      navigate('/matricula')
-    }
-  }
+  const updateUser = (user) => setAuth((prev) => (prev ? { ...prev, user } : prev))
 
   if (checking) return <div className="centered">Comprobando sesión…</div>
 
-  return (
-    <>
-      {!alumno ? (
+  if (!auth) {
+    return (
+      <>
         <Routes>
           <Route
             path="/login"
-            element={
-              <Login
-                onLoggedIn={loggedIn}
-                onOpenAlumnos={() => setAlumnosOpen(true)}
-                onOpenDiagramaER={() => setDiagramaOpen(true)}
-              />
-            }
+            element={<Login onLoggedIn={loggedIn} notice={notice} onOpenDiagramaER={() => setDiagramaOpen(true)} />}
           />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-      ) : (
-        <Shell
-          alumno={alumno}
-          onLogout={logout}
-          onAlumnoUpdated={handleAlumnoUpdated}
-          onOpenDiagramaER={() => setDiagramaOpen(true)}
-          onOpenAlumnos={() => setAlumnosOpen(true)}
-          onOpenNotas={() => setNotasOpen(true)}
-        />
-      )}
+        <DiagramaERModal isOpen={diagramaOpen} onClose={() => setDiagramaOpen(false)} />
+      </>
+    )
+  }
 
-      {/* Modales globales de Diagrama E-R, Gestión de Alumnos y Calificaciones */}
-      <DiagramaERModal isOpen={diagramaOpen} onClose={() => setDiagramaOpen(false)} />
-      <RegistroAlumnoModal
-        isOpen={alumnosOpen}
-        onClose={() => setAlumnosOpen(false)}
-        onLoginAs={handleLoginAs}
-      />
-      {alumno && (
-        <CalificacionesModal
-          isOpen={notasOpen}
-          onClose={() => setNotasOpen(false)}
-          alumno={alumno}
-          onNotasUpdated={() => {
-            // Se puede emitir actualización si se requiere
-          }}
-        />
-      )}
-    </>
-  )
+  if (auth.user?.debe_cambiar_password) {
+    return <CambioPasswordObligatorio user={auth.user} rol={auth.rol} onDone={updateUser} onLogout={() => logout()} />
+  }
+
+  return <Shell user={auth.user} rol={auth.rol} onLogout={() => logout()} onUserUpdated={updateUser} secondsLeft={secondsLeft} />
 }

@@ -1,119 +1,56 @@
-import { useEffect, useState } from 'react'
-import { alumnosApi, matriculaApi } from '../../api/client'
-import { Loading } from '../../components/AsyncState'
+import { useCallback, useEffect, useState } from 'react'
+import { matriculaApi } from '../../api/client'
+import { ErrorState, Loading } from '../../components/AsyncState'
+import { esPeriodoImpar } from '../../utils/academico'
 import InfoMatricula from './InfoMatricula'
 import PlanCicloSelector from './PlanCicloSelector'
 import RegistroMatricula from './RegistroMatricula'
 
-export default function Matricula({ alumno, onAlumnoUpdated }) {
-  // Pasos: 'select-plan-ciclo' -> 'info' -> 'registro'
-  const [step, setStep] = useState('select-plan-ciclo')
-  const [selectedPlanId, setSelectedPlanId] = useState(alumno?.id_plan || 2)
-  const [selectedCicloId, setSelectedCicloId] = useState(1)
-  const [periodos, setPeriodos] = useState([])
-  const [selectedPeriodo, setSelectedPeriodo] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [savingPlan, setSavingPlan] = useState(false)
+export default function Matricula({ alumno }) {
+  // Pasos: 'select' -> 'info' -> 'registro'
+  const [step, setStep] = useState('select')
+  const [periodos, setPeriodos] = useState(null)
+  const [error, setError] = useState(null)
+  const [periodo, setPeriodo] = useState(null)
+  const [ciclo, setCiclo] = useState(1)
 
-  // Cargar periodos académicos (2026-1 y 2026-2)
-  useEffect(() => {
-    let mounted = true
+  const load = useCallback(() => {
+    setError(null)
     matriculaApi
       .periodos()
       .then((data) => {
-        if (!mounted) return
-        const pList = data.periodos || []
-        setPeriodos(pList)
-        // Por defecto seleccionar 2026-1 si existe, o el primero
-        const p2026_1 = pList.find((p) => p.cod_per_acad === '2026-1') || pList[0] || {
-          id_periodo: 1,
-          cod_per_acad: '2026-1',
-          estado: 'en_curso',
-        }
-        setSelectedPeriodo(p2026_1)
+        const list = data.periodos || []
+        setPeriodos(list)
+        const abierto = list.find((p) => p.estado === 'en_curso') || list[0] || null
+        setPeriodo(abierto)
+        if (abierto) setCiclo(esPeriodoImpar(abierto.cod_per_acad) ? 1 : 2)
       })
-      .catch(() => {
-        if (mounted) {
-          const fallback = { id_periodo: 1, cod_per_acad: '2026-1', estado: 'en_curso' }
-          setPeriodos([fallback, { id_periodo: 2, cod_per_acad: '2026-2', estado: 'en_curso' }])
-          setSelectedPeriodo(fallback)
-        }
-      })
-      .finally(() => {
-        if (mounted) setLoading(false)
-      })
-
-    return () => {
-      mounted = false
-    }
+      .catch(setError)
   }, [])
+  useEffect(load, [load])
 
-  // Paso 1: Configuración seleccionada (Período 2026-1/2, Plan 2010/2019, Ciclo 1..10)
-  const handleSelectConfig = async (periodoCod, planId, cicloId) => {
-    // Buscar objeto del período seleccionado
-    const foundPeriodo = periodos.find((p) => p.cod_per_acad === periodoCod) || {
-      id_periodo: periodoCod === '2026-2' ? 2 : 1,
-      cod_per_acad: periodoCod,
-      estado: 'en_curso',
-    }
-    setSelectedPeriodo(foundPeriodo)
-    setSelectedPlanId(planId)
-    setSelectedCicloId(cicloId)
-
-    // Actualizar el plan en el backend si difiere del actual
-    if (alumno?.cod_alumno && alumno?.id_plan !== planId) {
-      setSavingPlan(true)
-      try {
-        const res = await alumnosApi.cambiarPlan(alumno.cod_alumno, planId)
-        if (onAlumnoUpdated) {
-          onAlumnoUpdated(res.alumno)
-        }
-      } catch (err) {
-        console.warn('No se pudo actualizar plan en backend:', err)
-      } finally {
-        setSavingPlan(false)
-      }
-    }
-
-    // Avanzar al paso 2: Información de Matrícula (Imagen 2)
-    setStep('info')
-  }
-
-  // Paso 2: Avanzar al paso 3 (Registro de Matrícula - Imágenes 1, 3 y 4)
-  const handleIniciarMatricula = () => {
-    setStep('registro')
-  }
-
-  if (loading) return <Loading />
+  if (error) return <ErrorState error={error} retry={load} />
+  if (!periodos) return <Loading />
+  if (periodos.length === 0) return <div className="state">No hay períodos académicos configurados.</div>
 
   return (
     <div className="matricula-flow-wrapper">
-      {step === 'select-plan-ciclo' && (
+      {step === 'select' && (
         <PlanCicloSelector
           alumno={alumno}
           periodos={periodos}
-          selectedPeriodo={selectedPeriodo}
-          onSelectConfig={handleSelectConfig}
-          saving={savingPlan}
+          periodo={periodo}
+          ciclo={ciclo}
+          onConfirm={(p, c) => {
+            setPeriodo(p)
+            setCiclo(c)
+            setStep('info')
+          }}
         />
       )}
-
-      {step === 'info' && (
-        <InfoMatricula
-          periodo={selectedPeriodo}
-          onIniciar={handleIniciarMatricula}
-          onCambiarConfig={() => setStep('select-plan-ciclo')}
-        />
-      )}
-
+      {step === 'info' && <InfoMatricula periodo={periodo} onIniciar={() => setStep('registro')} onCambiarConfig={() => setStep('select')} />}
       {step === 'registro' && (
-        <RegistroMatricula
-          alumno={alumno}
-          periodo={selectedPeriodo}
-          selectedPlanId={selectedPlanId}
-          selectedCicloId={selectedCicloId}
-          onCambiarPlanCiclo={() => setStep('select-plan-ciclo')}
-        />
+        <RegistroMatricula alumno={alumno} periodo={periodo} ciclo={ciclo} onCambiarCiclo={() => setStep('select')} />
       )}
     </div>
   )
