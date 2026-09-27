@@ -23,7 +23,7 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
 
   const codPeriodo = periodo?.cod_per_acad || '—'
   const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '—')
-  const abierto = periodo?.estado === 'en_curso'
+  const abierto = periodo?.matricula_abierta ?? periodo?.estado === 'en_curso'
 
   return (
     <div className="info-matricula-container">

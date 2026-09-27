@@ -1,9 +1,17 @@
 # Matrícula UNFV — Frontend
 
-SPA React + Vite con dos roles. El código está organizado por funcionalidades en `src/features` y todo acceso HTTP pasa por `src/api/client.js`.
+SPA React + Vite con seis roles; cada uno ve solo las pantallas de su función. El código está organizado por funcionalidades en `src/features` y todo acceso HTTP pasa por `src/api/client.js`.
 
 - **Alumno** (`/matricula`, `/malla`, `/horario`, `/historial`, `/configuracion`): arma su matrícula por secciones A/B/C con un carrito (reserva de 10 minutos, cursos de su ciclo y de otros ciclos que repite), retira cursos, ve su horario semanal a colores, su historial con N1-N3 y descarga la ficha de matrícula y la boleta de notas en el formato UNFV.
-- **Administrador** (`/admin`, `/admin/alumnos`, `/admin/notas`, `/configuracion`): registra alumnos con solo código, nombres, apellidos y plan (el correo `código@unfv.edu.pe` y la contraseña inicial = código se generan solos), edita, desactiva, restablece contraseñas, registra notas y abre o cierra períodos.
+- **Administrador** (`/admin`, `/admin/alumnos`, `/admin/notas`, `/configuracion`): registra alumnos con solo código, nombres, apellidos y plan (el correo `código@unfv.edu.pe` y la contraseña inicial = código se generan solos), edita, desactiva, restablece contraseñas y registra notas. En `/admin/personal` crea las cuentas del personal con nombres y apellidos y les asigna el rol; en el panel crea los períodos académicos.
+- **Jefe de Departamento** (`/programacion`, `/solicitudes`): fase 1, crea los horarios de cada curso (puede copiar un período anterior como base).
+- **Director de Escuela** (`/programacion`, `/solicitudes`): fase 2, asigna los docentes; establece los horarios, abre y cierra la matrícula.
+- **Asistente de Escuela** (`/programacion`, `/solicitudes`): fase 3, asigna pabellón, aula o laboratorio (a la sección o a cada sesión).
+- **Docente** (`/docente`, `/solicitudes`): fase 4, ve su horario semanal, confirma cada sección o reporta un problema.
+
+Jefe, director, asistente y docentes ven arriba una **barra de fases animada** con el período, la fase actual (se va pintando) y sus pendientes. Los cambios fuera de la fase de cada rol se piden en **Solicitudes de cambio**, con un hilo de mensajes, y se aplican solo cuando el rol responsable los acepta. Los alumnos solo pueden matricularse cuando el proceso llega a la fase 5.
+
+El inicio de sesión muestra arriba las **cuentas de prueba** de cada rol (toca una para completar usuario y contraseña).
 
 Primer ingreso: el alumno entra con su código como usuario y contraseña, y el sistema le obliga a cambiarla. Si la olvida, usa "¿Olvidaste tu contraseña?" (`/recuperar`). La sesión se mantiene al recargar y se cierra tras 10 minutos de inactividad.
 
@@ -19,11 +27,12 @@ Primer ingreso: el alumno entra con su código como usuario y contraseña, y el 
 
 Para una compilación de producción ejecuta `npm run build`; el resultado se genera en `dist/`.
 
-## Variable de entorno
+## Variables de entorno
 
 | Variable | Ejemplo |
 | --- | --- |
 | `VITE_API_URL` | `https://matricula-backend.onrender.com/api` |
+| `VITE_MOSTRAR_CUENTAS_PRUEBA` | Opcional. Ponla en `false` para ocultar las cuentas de prueba del login cuando el sistema pase a uso real. |
 
 No incluya una barra final. Vite incorpora esta variable durante la compilación, por lo que cambiarla en Vercel exige un nuevo despliegue.
 

@@ -13,7 +13,8 @@ function Dato({ label, value }) {
 }
 
 export default function Configuracion({ user, rol, onUserUpdated }) {
-  const isAdmin = rol === 'admin'
+  // Personal (admin, jefe, director, asistente, docente): cuenta de usuario; alumno: datos académicos
+  const isAdmin = rol !== 'alumno'
   const [form, setForm] = useState(
     isAdmin
       ? { nombres: user.nombres || '', email: user.email || '' }
@@ -50,11 +51,12 @@ export default function Configuracion({ user, rol, onUserUpdated }) {
 
       <div className="config-grid">
         <article className="panel-card">
-          <h3>{isAdmin ? 'Datos del administrador' : 'Datos académicos'}</h3>
+          <h3>{isAdmin ? 'Datos de la cuenta' : 'Datos académicos'}</h3>
           {isAdmin ? (
             <div className="datos-grid">
               <Dato label="Usuario" value={user.usuario} />
-              <Dato label="Rol" value="Administrador" />
+              <Dato label="Rol" value={user.rol_nombre || 'Administrador'} />
+              <Dato label="Correo" value={user.email} />
             </div>
           ) : (
             <>
@@ -113,7 +115,7 @@ export default function Configuracion({ user, rol, onUserUpdated }) {
           <h3>Seguridad · Cambiar contraseña</h3>
           <p className="muted small">
             Usa al menos 6 caracteres. {isAdmin ? '' : 'No puede ser igual a tu código de alumno. '}La sesión se cierra
-            automáticamente tras 15 minutos sin actividad.
+            automáticamente tras 10 minutos sin actividad.
           </p>
           <PasswordForm codigo={user.cod_alumno} onChanged={onUserUpdated} />
         </article>

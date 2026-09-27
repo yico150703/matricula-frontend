@@ -24,7 +24,7 @@ export default function Matricula({ alumno }) {
         setPeriodos(list)
         const actual = malla.ciclo_actual || 1
         setCicloActual(actual)
-        const abierto = list.find((p) => p.estado === 'en_curso') || list[0] || null
+        const abierto = list.find((p) => p.matricula_abierta ?? p.estado === 'en_curso') || list[0] || null
         setPeriodo(abierto)
         if (abierto) {
           // Ciclo sugerido: el nivel del alumno, ajustado a la paridad del período

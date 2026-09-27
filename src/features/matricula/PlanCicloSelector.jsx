@@ -16,7 +16,7 @@ export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, ci
   const ciclos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((n) => (impar ? n % 2 === 1 : n % 2 === 0))
 
   const choosePeriodo = (p) => {
-    if (p.estado !== 'en_curso') return
+    if (!(p.matricula_abierta ?? p.estado === 'en_curso')) return
     setSelPeriodo(p)
     const nuevoImpar = esPeriodoImpar(p.cod_per_acad)
     setSelCiclo((prev) => {
@@ -30,7 +30,7 @@ export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, ci
     if (selPeriodo) onConfirm(selPeriodo, selCiclo)
   }
 
-  const hayAbiertos = periodos.some((p) => p.estado === 'en_curso')
+  const hayAbiertos = periodos.some((p) => p.matricula_abierta ?? p.estado === 'en_curso')
 
   return (
     <div className="selector-page-container">
@@ -55,7 +55,7 @@ export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, ci
             <div className="periodos-grid-selector">
               {periodos.map((p) => {
                 const imp = esPeriodoImpar(p.cod_per_acad)
-                const cerrado = p.estado !== 'en_curso'
+                const cerrado = !(p.matricula_abierta ?? p.estado === 'en_curso')
                 return (
                   <button
                     type="button"
@@ -64,7 +64,9 @@ export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, ci
                     onClick={() => choosePeriodo(p)}
                     disabled={cerrado}
                   >
-                    <div className="periodo-tag-badge">{cerrado ? 'Cerrado' : imp ? 'Semestre impar' : 'Semestre par'}</div>
+                    <div className="periodo-tag-badge">
+                      {cerrado ? (p.estado === 'programacion' ? 'Horarios en programación' : 'Cerrado') : imp ? 'Semestre impar' : 'Semestre par'}
+                    </div>
                     <h4>Período {p.cod_per_acad}</h4>
                     <p>
                       Ciclos: <strong>{imp ? 'I, III, V, VII, IX' : 'II, IV, VI, VIII, X'}</strong>
@@ -113,7 +115,7 @@ export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, ci
           </div>
 
           <div className="selector-actions">
-            <button type="submit" className="btn-continue-matricula" disabled={!selPeriodo || selPeriodo.estado !== 'en_curso'}>
+            <button type="submit" className="btn-continue-matricula" disabled={!selPeriodo || !(selPeriodo.matricula_abierta ?? selPeriodo.estado === 'en_curso')}>
               Continuar <ArrowRight size={18} />
             </button>
           </div>

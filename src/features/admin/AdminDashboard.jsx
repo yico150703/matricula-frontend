@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { KeyRound, Link2, RotateCcw, ShieldCheck, Target, Trash2, User, UserPlus } from 'lucide-react'
+import { CalendarPlus, KeyRound, Link2, RotateCcw, ShieldCheck, Target, Trash2, User, UserPlus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { adminApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
@@ -7,7 +7,6 @@ import { ErrorState, Loading } from '../../components/AsyncState'
 export default function AdminDashboard() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
-  const [savingId, setSavingId] = useState(null)
   const [msg, setMsg] = useState(null)
 
   const [solicitudes, setSolicitudes] = useState([])
@@ -36,18 +35,18 @@ export default function AdminDashboard() {
   }
   useEffect(load, [load])
 
-  const togglePeriodo = async (p) => {
-    const nuevo = p.estado === 'en_curso' ? 'cerrado' : 'en_curso'
-    setSavingId(p.id_periodo)
+  // La matrícula ya no se abre a mano: la abre el proceso de horarios al llegar a la fase 5
+  const [nuevoPeriodo, setNuevoPeriodo] = useState({ cod_per_acad: '', fecha_inicio: '', fecha_fin: '' })
+  const crearPeriodo = async (e) => {
+    e.preventDefault()
     setMsg(null)
     try {
-      await adminApi.actualizarPeriodo(p.id_periodo, nuevo)
-      setMsg({ ok: true, text: `Período ${p.cod_per_acad} ${nuevo === 'en_curso' ? 'abierto' : 'cerrado'} para matrícula.` })
+      await adminApi.crearPeriodo(nuevoPeriodo)
+      setMsg({ ok: true, text: `Período ${nuevoPeriodo.cod_per_acad} creado: el Jefe de Departamento ya puede iniciar la fase 1.` })
+      setNuevoPeriodo({ cod_per_acad: '', fecha_inicio: '', fecha_fin: '' })
       load()
     } catch (err) {
       setMsg({ ok: false, text: err.detail })
-    } finally {
-      setSavingId(null)
     }
   }
 
@@ -148,7 +147,35 @@ export default function AdminDashboard() {
 
       <article className="panel-card">
         <h3>Períodos académicos</h3>
-        <p className="muted small">Solo los períodos abiertos (“en curso”) permiten que los alumnos se matriculen o retiren cursos.</p>
+        <p className="muted small">
+          La matrícula se abre sola cuando el proceso de horarios llega a la fase 5 (lo decide el Director de Escuela) y se cierra en la fase 7. Aquí solo se
+          crean los períodos.
+        </p>
+        <form className="form-grid form-grid-4 periodo-form" onSubmit={crearPeriodo}>
+          <label className="field">
+            Nuevo período
+            <input
+              value={nuevoPeriodo.cod_per_acad}
+              onChange={(e) => setNuevoPeriodo({ ...nuevoPeriodo, cod_per_acad: e.target.value })}
+              placeholder="2027-2"
+              required
+              pattern="20[0-9]{2}-[12]"
+            />
+          </label>
+          <label className="field">
+            Inicio de clases
+            <input type="date" value={nuevoPeriodo.fecha_inicio} onChange={(e) => setNuevoPeriodo({ ...nuevoPeriodo, fecha_inicio: e.target.value })} required />
+          </label>
+          <label className="field">
+            Fin de clases
+            <input type="date" value={nuevoPeriodo.fecha_fin} onChange={(e) => setNuevoPeriodo({ ...nuevoPeriodo, fecha_fin: e.target.value })} required />
+          </label>
+          <div className="form-actions" style={{ alignSelf: 'end' }}>
+            <button className="btn-primary">
+              <CalendarPlus size={15} /> Crear período
+            </button>
+          </div>
+        </form>
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -158,8 +185,7 @@ export default function AdminDashboard() {
                 <th>Fin</th>
                 <th>Matrículas</th>
                 <th>Cursos inscritos</th>
-                <th>Estado</th>
-                <th />
+                <th>Proceso de horarios</th>
               </tr>
             </thead>
             <tbody>
@@ -173,14 +199,9 @@ export default function AdminDashboard() {
                   <td>{p.matriculas}</td>
                   <td>{p.cursos_matriculados}</td>
                   <td>
-                    <span className={`pill ${p.estado === 'en_curso' ? 'pill-ok' : 'pill-muted'}`}>
-                      {p.estado === 'en_curso' ? 'Abierto' : 'Cerrado'}
+                    <span className={`pill ${p.fase === 5 || p.fase === 6 ? 'pill-ok' : p.fase === 7 ? 'pill-muted' : 'pill-info'}`}>
+                      {p.fase >= 7 ? 'Cerrado' : p.fase >= 5 ? `Fase ${p.fase} · matrícula abierta` : `Fase ${p.fase} · en programación`}
                     </span>
-                  </td>
-                  <td className="right">
-                    <button type="button" className="btn-secondary btn-sm" disabled={savingId === p.id_periodo} onClick={() => togglePeriodo(p)}>
-                      {p.estado === 'en_curso' ? 'Cerrar' : 'Abrir'}
-                    </button>
                   </td>
                 </tr>
               ))}
@@ -212,7 +233,8 @@ export default function AdminDashboard() {
               <li>Editar datos, plan y estado de los alumnos</li>
               <li>Atender solicitudes de recuperación de contraseña</li>
               <li>Registrar notas N1, N2, N3, sustitutorio y aplazado</li>
-              <li>Abrir o cerrar períodos de matrícula</li>
+              <li>Crear cuentas del personal y asignar roles</li>
+              <li>Crear períodos académicos</li>
             </ul>
           </div>
         </div>

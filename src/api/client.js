@@ -124,5 +124,35 @@ export const adminApi = {
   calificar: (codigo, codCurso, notas) => api(`/alumnos/${enc(codigo)}/calificar`, json('POST', { cod_curso: codCurso, ...notas })),
   solicitudesPassword: () => api('/admin/solicitudes-password'),
   atenderSolicitud: (id, accion) => api(`/admin/solicitudes-password/${id}/atender`, json('POST', { accion })),
-  actualizarPeriodo: (idPeriodo, estado) => api(`/periodos/${idPeriodo}`, json('PATCH', { estado })),
+  crearPeriodo: (payload) => api('/admin/periodos', json('POST', payload)),
+  // Personal: jefe de departamento, director, asistente, docentes y administradores
+  personal: () => api('/admin/usuarios'),
+  crearPersonal: (payload) => api('/admin/usuarios', json('POST', payload)),
+  actualizarPersonal: (id, payload) => api(`/admin/usuarios/${id}`, json('PATCH', payload)),
+  resetPersonal: (id) => api(`/admin/usuarios/${id}/reset-password`, json('POST')),
+}
+
+// --- Proceso de horarios (jefe de departamento, director, asistente) ---
+export const procesoApi = {
+  periodos: () => api('/proceso/periodos'),
+  detalle: (idPeriodo) => api(`/proceso/${idPeriodo}`),
+  docentes: (idPeriodo) => api(`/proceso/docentes?periodo=${idPeriodo}`),
+  accion: (idPeriodo, accion, extra = {}) => api(`/proceso/${idPeriodo}/accion`, json('POST', { accion, ...extra })),
+  copiar: (idPeriodo, desde) => api(`/proceso/${idPeriodo}/copiar`, json('POST', { desde_periodo: desde })),
+  crearSeccion: (idPeriodo, payload) => api(`/proceso/${idPeriodo}/secciones`, json('POST', payload)),
+  editarSeccion: (idSeccion, payload) => api(`/proceso/secciones/${idSeccion}`, json('PUT', payload)),
+  eliminarSeccion: (idSeccion) => api(`/proceso/secciones/${idSeccion}`, { method: 'DELETE' }),
+  asignarDocente: (idSeccion, idDocente) => api(`/proceso/secciones/${idSeccion}/docente`, json('PUT', { id_docente: idDocente })),
+  asignarAula: (idSeccion, aula, sesion) => api(`/proceso/secciones/${idSeccion}/aula`, json('PUT', sesion == null ? { aula } : { aula, sesion })),
+  solicitudes: (idPeriodo) => api(`/proceso/${idPeriodo}/solicitudes`),
+  crearSolicitud: (idPeriodo, payload) => api(`/proceso/${idPeriodo}/solicitudes`, json('POST', payload)),
+  mensaje: (idSolicitud, texto) => api(`/proceso/solicitudes/${idSolicitud}/mensajes`, json('POST', { texto })),
+  resolver: (idSolicitud, accion, respuesta, propuesta) =>
+    api(`/proceso/solicitudes/${idSolicitud}/resolver`, json('POST', { accion, respuesta, propuesta })),
+}
+
+// --- Docente ---
+export const docenteApi = {
+  horario: (idPeriodo) => api(`/docente/horario${idPeriodo ? `?periodo=${idPeriodo}` : ''}`),
+  confirmar: (idSeccion) => api(`/docente/secciones/${idSeccion}/confirmar`, json('POST')),
 }

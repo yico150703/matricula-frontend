@@ -1,8 +1,50 @@
-import { Eye, EyeOff, LogIn } from 'lucide-react'
+import { Building2, CalendarRange, Eye, EyeOff, GraduationCap, KeyRound, LogIn, ShieldCheck, UserCheck, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { authApi } from '../../api/client'
 import AuthLayout from '../../components/AuthLayout'
+
+// Cuentas de prueba (las crea el script de base de datos). Se muestran al inicio del login.
+const CUENTAS_PRUEBA = [
+  { rol: 'Administrador del sistema', usuario: 'admin', clave: 'Admin2026!', icon: ShieldCheck },
+  { rol: 'Jefe de Departamento', usuario: 'jefedepartamentoescuelasistemas@unfv.edu.pe', clave: 'Jefe2026!', icon: CalendarRange },
+  { rol: 'Director de Escuela', usuario: 'directorescuelasistemas@unfv.edu.pe', clave: 'Director2026!', icon: UserCheck },
+  { rol: 'Asistente de Escuela', usuario: 'asistenteescuelasistemas@unfv.edu.pe', clave: 'Asistente2026!', icon: Building2 },
+  { rol: 'Docente', usuario: 'jalvaradotorres@unfv.pe', clave: 'Docente2026!', icon: Users },
+  { rol: 'Alumno', usuario: '20260001', clave: '20260001', icon: GraduationCap }
+]
+
+// Poner VITE_MOSTRAR_CUENTAS_PRUEBA=false en Vercel cuando el sistema pase a uso real
+const MOSTRAR_CUENTAS = import.meta.env.VITE_MOSTRAR_CUENTAS_PRUEBA !== 'false'
+
+function CuentasPrueba({ onUsar }) {
+  return (
+    <div className="demo-accounts">
+      <div className="demo-accounts-head">
+        <KeyRound size={15} /> Cuentas de prueba · toca una para completar
+      </div>
+      <ul>
+        {CUENTAS_PRUEBA.map(({ rol, usuario, clave, icon: Icon }) => (
+          <li key={usuario}>
+            <button type="button" onClick={() => onUsar(usuario, clave)}>
+              <Icon size={16} />
+              <span>
+                <b>{rol}</b>
+                <small title={usuario}>{usuario}</small>
+                <small>
+                  Clave: <code>{clave}</code>
+                </small>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="demo-accounts-note">
+        El admin y los alumnos deben cambiar su contraseña al primer ingreso; si alguien ya la cambió, el administrador puede restablecerla.
+      </p>
+    </div>
+  )
+}
 
 export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
   const [usuario, setUsuario] = useState('')
@@ -28,16 +70,25 @@ export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
   return (
     <AuthLayout onOpenDiagramaER={onOpenDiagramaER}>
       <form className="auth-form" onSubmit={submit}>
+        {MOSTRAR_CUENTAS && (
+          <CuentasPrueba
+            onUsar={(u, c) => {
+              setUsuario(u)
+              setPassword(c)
+              setError('')
+            }}
+          />
+        )}
         <h2>Iniciar sesión</h2>
         {notice && <p className="form-notice">{notice}</p>}
         <label className="field">
-          Código de alumno o usuario
+          Correo, código de alumno o usuario
           <input
             required
             value={usuario}
             onChange={(e) => setUsuario(e.target.value)}
             autoComplete="username"
-            placeholder="Ej. 2024035025"
+            placeholder="Ej. 2024035025 o nombre@unfv.pe"
             autoFocus
           />
         </label>
@@ -63,7 +114,7 @@ export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
           </div>
         </label>
         {error && <p className="form-error">{error}</p>}
-        <button disabled={sending} className="btn-primary btn-block">
+        <button type="submit" disabled={sending} className="btn-primary btn-block">
           <LogIn size={18} /> {sending ? 'Ingresando…' : 'Ingresar'}
         </button>
         <Link to="/recuperar" className="auth-link">

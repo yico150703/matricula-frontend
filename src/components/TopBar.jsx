@@ -10,9 +10,9 @@ const formatTimer = (total) => {
 
 export default function TopBar({ user, rol, onLogout, onToggleMenu, secondsLeft }) {
   const navigate = useNavigate()
-  const isAdmin = rol === 'admin'
-  const nombre = isAdmin
-    ? user?.nombres || user?.usuario
+  const esAlumno = rol === 'alumno'
+  const nombre = !esAlumno
+    ? [user?.nombres, user?.apellidos].filter(Boolean).join(' ') || user?.usuario
     : user?.apellidos && user?.nombres
       ? `${user.apellidos.toUpperCase()}, ${user.nombres.toUpperCase()}`
       : user?.cod_alumno
@@ -31,7 +31,7 @@ export default function TopBar({ user, rol, onLogout, onToggleMenu, secondsLeft 
       </div>
 
       <div className="topbar-right">
-        <span className={`role-chip ${isAdmin ? 'role-admin' : 'role-alumno'}`}>{isAdmin ? 'Administrador' : 'Alumno'}</span>
+        <span className={`role-chip ${esAlumno ? 'role-alumno' : 'role-admin'} role-${rol}`}>{esAlumno ? 'Alumno' : user?.rol_nombre || 'Administrador'}</span>
 
         <div className={`topbar-timer ${lowTime ? 'timer-low' : ''}`} title="La sesión se cierra tras 10 minutos sin actividad">
           <Timer size={15} /> {formatTimer(secondsLeft)}
