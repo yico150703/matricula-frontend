@@ -1,160 +1,276 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { DIAS, formatoNota, redondear, sesionesDe } from './academico'
 
-export function descargarFichaMatriculaPDF({
-  alumno,
-  periodo,
-  planNombre,
-  nroMatricula,
-  secciones,
-  totalCreditos,
-  totalAsignaturas,
-}) {
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  })
+const pad2 = (n) => String(n).padStart(2, '0')
 
-  const diasSemana = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-  const codPeriodo = periodo?.cod_per_acad || '2026-1'
-  const ahora = new Date()
-  const fechaEmision = ahora.toLocaleString('es-PE', {
-    dateStyle: 'medium',
-    timeStyle: 'medium',
-  })
+function fechaHora() {
+  const d = new Date()
+  return {
+    fecha: `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${String(d.getFullYear()).slice(2)}`,
+    hora: `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`,
+  }
+}
 
-  // 1. Encabezado institucional UNFV - FIIS
-  doc.setFillColor(16, 59, 112) // Azul institucional #103b70
-  doc.rect(0, 0, 210, 24, 'F')
+function barras(doc, x, y) {
+  // Marca gráfica de las boletas oficiales (bloque de líneas verticales)
+  doc.setLineWidth(0.35)
+  for (let i = 0; i < 6; i++) {
+    doc.line(x + i * 1.1, y - 3.2, x + i * 1.1, y - 1.7)
+    doc.line(x + i * 1.1, y - 1.1, x + i * 1.1, y + 0.4)
+  }
+}
 
-  doc.setTextColor(255, 255, 255)
+/** Encabezado con el formato de las boletas de la UNFV (anexo 4). */
+function encabezado(doc, titulo, alumno, nivel) {
+  const { fecha, hora } = fechaHora()
+  doc.setTextColor(0, 0, 0)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(13)
-  doc.text('UNIVERSIDAD NACIONAL FEDERICO VILLARREAL', 105, 10, { align: 'center' })
-
-  doc.setFontSize(10)
+  doc.setFontSize(11.5)
+  doc.text('UNIVERSIDAD NACIONAL FEDERICO VILLARREAL', 12, 13)
   doc.setFont('helvetica', 'normal')
-  doc.text('FACULTAD DE INGENIERÍA INDUSTRIAL Y DE SISTEMAS (FIIS)', 105, 16, { align: 'center' })
-  doc.text('Escuela Profesional de Ingeniería de Sistemas', 105, 21, { align: 'center' })
+  doc.setFontSize(7)
+  doc.text('INGENIERIA INDUSTRIAL Y DE SISTEMAS', 12, 16.5)
 
-  // 2. Título de la Ficha
-  doc.setTextColor(16, 59, 112)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(14)
-  doc.text(`CONSTANCIA OFICIAL DE MATRÍCULA ${codPeriodo}`, 105, 33, { align: 'center' })
+  doc.setFontSize(8.5)
+  doc.text('Fecha', 160, 12)
+  doc.text(`:  ${fecha}`, 175, 12)
+  doc.text('Hora', 160, 16)
+  doc.text(`:  ${hora}`, 175, 16)
 
-  // 3. Cuadro de Datos del Estudiante
-  doc.setDrawColor(210, 220, 235)
-  doc.setFillColor(245, 248, 252)
-  doc.roundedRect(14, 38, 182, 34, 3, 3, 'FD')
+  doc.setFontSize(15)
+  const w = doc.getTextWidth(titulo)
+  doc.text(titulo, 105, 22, { align: 'center' })
+  barras(doc, 105 - w / 2 - 10, 22)
+  barras(doc, 105 + w / 2 + 4, 22)
 
   doc.setFontSize(9)
-  doc.setTextColor(70, 85, 105)
-  doc.text('Código de Alumno:', 18, 44)
-  doc.text('Estudiante:', 18, 50)
-  doc.text('Facultad:', 18, 56)
-  doc.text('Plan de Estudios:', 18, 62)
-  doc.text('Fecha de Emisión:', 18, 68)
-
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(20, 30, 45)
-  doc.text(String(alumno?.cod_alumno || ''), 54, 44)
-  doc.text(`${(alumno?.apellidos || '').toUpperCase()}, ${(alumno?.nombres || '').toUpperCase()}`, 54, 50)
-  doc.text('FIIS - Facultad de Ingeniería Industrial y de Sistemas', 54, 56)
-  doc.text(planNombre || 'Malla Curricular Vigente 2019', 54, 62)
-  doc.text(fechaEmision, 54, 68)
-
+  const filas = [
+    ['Facultad', 'INGENIERIA INDUSTRIAL Y DE SISTEMAS', true],
+    ['Escuela', 'INGENIERIA DE SISTEMAS', false],
+    ['Especialidad', '', false],
+    ['Alumno', `${(alumno?.apellidos || '').toUpperCase()} ${(alumno?.nombres || '').toUpperCase()}`.trim(), true],
+    ['Plan', '2019', true],
+  ]
+  let y = 30
+  filas.forEach(([label, valor, bold]) => {
+    doc.setFont('helvetica', 'normal')
+    doc.text(label, 12, y)
+    doc.setFont('helvetica', bold ? 'bold' : 'normal')
+    doc.setFontSize(label === 'Plan' ? 11 : 9)
+    doc.text(valor, 42, y)
+    doc.setFontSize(9)
+    y += 4.6
+  })
   doc.setFont('helvetica', 'normal')
-  doc.text('Período Académico:', 125, 44)
-  doc.text('Programa:', 125, 50)
-  doc.text('N° Matrícula:', 125, 56)
-  doc.text('Estado:', 125, 62)
-
+  doc.text('Codigo :', 158, 48.4)
   doc.setFont('helvetica', 'bold')
-  doc.text(codPeriodo, 160, 44)
-  doc.text('Ing. de Sistemas', 160, 50)
-  doc.text(String(nroMatricula || '-'), 160, 56)
-  doc.setTextColor(22, 101, 52) // Verde
-  doc.text('CONFIRMADA', 160, 62)
+  doc.setFontSize(13)
+  doc.text(String(alumno?.cod_alumno || ''), 171, 48.4)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.text('Nivel :', 170, 53)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
+  doc.text(pad2(nivel || 1), 180, 53)
+  doc.setLineWidth(0.5)
+  doc.line(12, 55.5, 198, 55.5)
+  return 56
+}
 
-  // 4. Tabla de Asignaturas Matriculadas
-  const tableData = secciones.map((sec, index) => {
-    const curso = sec.curso || {}
-    const dia = diasSemana[sec.dia] || ''
-    const horario = `${dia} ${sec.hora_inicio || ''}–${sec.hora_fin || ''}`
-    const aula = sec.aula ? `Aula ${sec.aula}` : ''
-    const docente = sec.docente || 'Por asignar'
+const tablaBase = {
+  theme: 'plain',
+  styles: { font: 'helvetica', fontSize: 7.4, cellPadding: { top: 1.1, bottom: 1.1, left: 0.8, right: 0.8 }, textColor: [0, 0, 0] },
+  headStyles: { fontStyle: 'normal', fontSize: 7.6, halign: 'center' },
+  margin: { left: 12, right: 12 },
+  didDrawCell: (data) => {
+    if (data.section === 'head' && data.column.index === 0) {
+      const { doc, table } = data
+      const y = data.cell.y + data.cell.height
+      doc.setLineWidth(0.3)
+      doc.line(12, y, 12 + table.getWidth(doc.internal.pageSize.getWidth()), y)
+    }
+  },
+}
 
+function lineaFinal(doc, y) {
+  doc.setLineWidth(0.5)
+  doc.line(12, y, 198, y)
+}
+
+function nombreArchivo(prefijo, alumno, periodo) {
+  return `${prefijo}_${alumno?.cod_alumno || 'alumno'}_${String(periodo?.cod_per_acad || '').replace('-', '_')}.pdf`
+}
+
+/** Ficha de matrícula del período (formato UNFV) con horario, aula y docente de cada curso. */
+export function descargarFichaMatriculaPDF({ alumno, periodo, matricula }) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const cod = periodo?.cod_per_acad || matricula?.periodo?.cod_per_acad || ''
+  const [anio, num] = cod.split('-')
+  const detalles = (matricula?.detalles || []).filter((d) => d.estado === 'matriculado' && d.seccion)
+  const nivel = Math.min(...detalles.map((d) => d.seccion.curso?.ciclo || 10))
+  let y = encabezado(doc, `FICHA DE MATRICULA  ${anio}-${num}`, alumno, Number.isFinite(nivel) ? nivel : 1)
+
+  const body = detalles.map((d, i) => {
+    const s = d.seccion
+    const c = s.curso || {}
+    const horario = sesionesDe(s)
+      .map((x) => `${DIAS[x.dia]} ${x.hora_inicio}-${x.hora_fin}`)
+      .join('\n')
+    const aulas = [...new Set(sesionesDe(s).map((x) => x.aula || s.aula))].join('\n')
     return [
-      (index + 1).toString(),
-      curso.codigo_curso || '',
-      curso.nombre_curso || '',
-      `Ciclo ${curso.ciclo || 1}`,
-      `Sec. ${sec.nro_seccion || '01'}`,
-      curso.creditos ? Number(curso.creditos).toFixed(1) : '3.0',
-      docente,
-      `${horario}\n(${aula})`,
+      i + 1,
+      `${anio} ${num}`,
+      c.codigo_curso,
+      s.turno,
+      s.cod_seccion,
+      { content: `${c.nombre_curso || ''}\n${s.docente || ''}`, styles: { fontSize: 7 } },
+      pad2(c.creditos || 0),
+      pad2(c.ciclo || 0),
+      '2019',
+      horario,
+      aulas,
     ]
   })
 
   autoTable(doc, {
-    startY: 76,
-    head: [['N°', 'Código', 'Asignatura', 'Ciclo', 'Secc.', 'Créd.', 'Docente a Cargo', 'Horario / Aula']],
-    body: tableData,
-    theme: 'grid',
-    headStyles: {
-      fillColor: [84, 114, 156], // Azul acero #54729c
-      textColor: [255, 255, 255],
-      fontSize: 8.5,
-      halign: 'center',
-      valign: 'middle',
-    },
-    bodyStyles: {
-      fontSize: 8,
-      textColor: [30, 41, 59],
-      valign: 'middle',
-    },
+    ...tablaBase,
+    startY: y + 1,
+    head: [['Ord.', 'Periodo', 'Cod Asig.', 'T', 'S', 'Asignatura / Docente', 'Cred', 'Nivel', 'Plan', 'Horario', 'Aula']],
+    body,
     columnStyles: {
       0: { halign: 'center', cellWidth: 8 },
-      1: { halign: 'center', cellWidth: 16, fontStyle: 'bold' },
-      2: { cellWidth: 46 },
-      3: { halign: 'center', cellWidth: 16 },
-      4: { halign: 'center', cellWidth: 14 },
-      5: { halign: 'center', cellWidth: 13, fontStyle: 'bold' },
-      6: { cellWidth: 41 },
-      7: { halign: 'center', cellWidth: 28 },
+      1: { halign: 'center', cellWidth: 13 },
+      2: { halign: 'center', cellWidth: 14 },
+      3: { halign: 'center', cellWidth: 5 },
+      4: { halign: 'center', cellWidth: 5 },
+      5: { cellWidth: 58 },
+      6: { halign: 'center', cellWidth: 9 },
+      7: { halign: 'center', cellWidth: 9 },
+      8: { halign: 'center', cellWidth: 10 },
+      9: { cellWidth: 36 },
+      10: { halign: 'center', cellWidth: 19 },
     },
-    alternateRowStyles: {
-      fillColor: [248, 250, 252],
-    },
-    margin: { left: 14, right: 14 },
   })
 
-  // 5. Cuadro de Resumen de Créditos y Asignaturas
-  const finalY = doc.lastAutoTable.finalY + 6
-
-  doc.setFillColor(219, 234, 254) // Celeste suave #dbeafe
-  doc.roundedRect(14, finalY, 182, 14, 2, 2, 'F')
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(30, 64, 175) // Azul #1e40af
-  doc.text(`Total de Asignaturas: ${totalAsignaturas}`, 25, finalY + 9)
-  doc.text(`Total de Créditos Matriculados: ${Number(totalCreditos).toFixed(1)} / 26.0 máx.`, 80, finalY + 9)
-  doc.text('Condición: REGULAR', 155, finalY + 9)
-
-  // 6. Pie de página institucional y código de verificación digital
-  const hashVerificacion = `${alumno?.cod_alumno || ''}-${nroMatricula || 'PRE'}-${codPeriodo}`
-
+  y = doc.lastAutoTable.finalY + 2
+  lineaFinal(doc, y)
+  const creditos = detalles.reduce((a, d) => a + Number(d.seccion.curso?.creditos || 0), 0)
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7.5)
-  doc.setTextColor(100, 116, 139)
-  doc.text('Nota: Esta ficha certifica la inscripción de cursos en el Sistema de Matrícula Vía Web de la UNFV.', 14, finalY + 24)
-  doc.text(`Código de Verificación Digital: FIIS-MAT-${hashVerificacion} | Sistema Web FIIS`, 14, finalY + 28)
-  doc.text('Página 1 de 1', 196, finalY + 28, { align: 'right' })
+  doc.setFontSize(8)
+  y += 6
+  doc.text(`N.º Matrícula :   ${matricula?.nro_matricula ?? '-'}`, 12, y)
+  doc.text(`Total  Asignaturas :   ${detalles.length}`, 75, y)
+  doc.text(`Total  Creditos :   ${creditos}`, 140, y)
+  y += 5
+  if (matricula?.fecha_matricula) {
+    const f = new Date(matricula.fecha_matricula)
+    doc.text(`Fecha de matrícula :   ${f.toLocaleString('es-PE')}`, 12, y)
+  }
+  doc.text('Estado :   CONFIRMADA', 140, y)
+  y += 2
+  lineaFinal(doc, y)
+  doc.setFontSize(7)
+  doc.setTextColor(90, 90, 90)
+  doc.text('T: turno (M mañana, T tarde, N noche) · S: sección. Documento generado por el Sistema de Matrícula FIIS - UNFV.', 12, y + 5)
 
-  // Descargar archivo
-  const nombreArchivo = `Ficha_Matricula_UNFV_FIIS_${alumno?.cod_alumno || 'alumno'}_${codPeriodo.replace('-', '_')}.pdf`
-  doc.save(nombreArchivo)
+  doc.save(nombreArchivo('Ficha_Matricula', alumno, { cod_per_acad: cod }))
 }
+
+/** Boleta de notas del período (formato UNFV, anexo 4): N1, N2, N3, Su, Pr, Ap y Nota. */
+export function descargarBoletaNotasPDF({ alumno, periodo, filas, nivel, notaMinima = 11 }) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const cod = periodo?.cod_per_acad || ''
+  const historico = cod === 'HISTORICO'
+  const [anio, num] = historico ? ['ANT', ''] : cod.split('-')
+  let y = encabezado(doc, historico ? 'RECORD DE NOTAS ANTERIORES' : `BOLETAS DE NOTAS  ${anio}-${num}`, alumno, nivel)
+
+  const n = (v) => (v === null || v === undefined ? '' : formatoNota(v))
+  const body = filas.map((f, i) => [
+    i + 1,
+    `${anio} ${num}`,
+    f.curso.codigo_curso,
+    f.turno || '',
+    f.seccion || '',
+    f.curso.nombre_curso,
+    pad2(f.curso.creditos),
+    pad2(f.curso.ciclo),
+    '2019',
+    n(f.n1),
+    n(f.n2),
+    n(f.n3),
+    n(f.sustitutorio),
+    n(f.promedio),
+    n(f.aplazado),
+    f.estado === 'retirado' ? 'RET' : n(f.nota_final),
+  ])
+
+  autoTable(doc, {
+    ...tablaBase,
+    startY: y + 1,
+    head: [['Ord.', 'Periodo', 'Cod Asig.', 'T', 'S', 'Asignatura', 'Cred', 'Nivel', 'Plan', 'N1', 'N2', 'N3', 'Su', 'Pr', 'Ap', 'Nota']],
+    body,
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 8 },
+      1: { halign: 'center', cellWidth: 13 },
+      2: { halign: 'center', cellWidth: 14 },
+      3: { halign: 'center', cellWidth: 5 },
+      4: { halign: 'center', cellWidth: 5 },
+      5: { cellWidth: 62, fontSize: 6.8 },
+      6: { halign: 'center', cellWidth: 8 },
+      7: { halign: 'center', cellWidth: 8 },
+      8: { halign: 'center', cellWidth: 9 },
+      9: { halign: 'center', cellWidth: 7 },
+      10: { halign: 'center', cellWidth: 7 },
+      11: { halign: 'center', cellWidth: 7 },
+      12: { halign: 'center', cellWidth: 7 },
+      13: { halign: 'center', cellWidth: 7 },
+      14: { halign: 'center', cellWidth: 7 },
+      15: { halign: 'center', cellWidth: 12 },
+    },
+  })
+
+  y = doc.lastAutoTable.finalY + 2
+  lineaFinal(doc, y)
+  const conNota = filas.filter((f) => f.estado === 'matriculado' && f.nota_final !== null)
+  const aprob = conNota.filter((f) => redondear(f.nota_final) >= notaMinima)
+  const desap = conNota.filter((f) => redondear(f.nota_final) < notaMinima)
+  const aband = filas.filter((f) => f.estado === 'retirado')
+  const cr = (lista) => lista.reduce((a, f) => a + Number(f.curso.creditos || 0), 0)
+  const aritmetico = conNota.length ? conNota.reduce((a, f) => a + redondear(f.nota_final), 0) / conNota.length : 0
+  const ponderado = cr(conNota) ? conNota.reduce((a, f) => a + redondear(f.nota_final) * Number(f.curso.creditos), 0) / cr(conNota) : 0
+
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  const resumen = [
+    ['Asig.     Aprobados :', aprob.length, 'Cred.     Aprobados :', cr(aprob)],
+    ['Asig. Desaprobados :', desap.length, 'Cred. Desaprobados :', cr(desap)],
+    ['Asig. Abandonados :', aband.length, 'Cred. Abandonados :', cr(aband)],
+    ['Total     Asignaturas :', filas.length, 'Total          Creditos :', cr(filas)],
+  ]
+  resumen.forEach((r, i) => {
+    const yy = y + 5 + i * 4.6
+    doc.text(r[0], 12, yy)
+    doc.text(String(r[1]), 52, yy)
+    doc.text(r[2], 70, yy)
+    doc.text(String(r[3]), 120, yy)
+  })
+  doc.setFontSize(10)
+  doc.text('Promedio Aritmetico', 135, y + 10.6)
+  doc.text('Promedio Ponderado', 135, y + 15.6)
+  doc.setFont('helvetica', 'bold')
+  doc.text(aritmetico.toFixed(2), 180, y + 10.6)
+  doc.text(ponderado.toFixed(2), 180, y + 15.6)
+  lineaFinal(doc, y + 21)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(90, 90, 90)
+  doc.text(
+    `Nota aprobatoria: ${notaMinima}. Las notas se redondean al entero: desde x.5 sube (10.5 = 11); por debajo se mantiene (10.4 = 10).`,
+    12,
+    y + 26,
+  )
+
+  doc.save(nombreArchivo('Boleta_Notas', alumno, periodo))
+}
+

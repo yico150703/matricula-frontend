@@ -56,7 +56,7 @@ export async function api(path, options = {}) {
     throw new ApiError(
       'error_conexion',
       0,
-      'No se pudo conectar con el servidor. Si es el primer ingreso del día, espera unos segundos (el servidor se está activando) y vuelve a intentar.',
+      'No se pudo conectar con el servidor. Si es el primer ingreso del día, espera unos segundos mientras el servidor se activa y vuelve a intentar.',
     )
   }
   const body = await response.json().catch(() => ({}))
@@ -75,6 +75,9 @@ const enc = encodeURIComponent
 
 export const authApi = {
   login: (usuario, password) => api('/auth/login', json('POST', { usuario, password })),
+  recuperar: (usuario) => api('/auth/recuperar', json('POST', { usuario })),
+  validarToken: (token) => api(`/auth/restablecer/${enc(token)}`),
+  restablecer: (token, nueva) => api('/auth/restablecer', json('POST', { token, password_nueva: nueva })),
   me: () => api('/auth/me'),
   cambiarPassword: (actual, nueva) => api('/auth/cambiar-password', json('POST', { password_actual: actual, password_nueva: nueva })),
   actualizarPerfil: (payload) => api('/auth/perfil', json('PATCH', payload)),
@@ -85,6 +88,7 @@ export const matriculaApi = {
   historial: (codigo) => api(`/alumnos/${enc(codigo)}/historial`),
   periodos: () => api('/periodos'),
   actual: (codigo, periodo) => api(`/matriculas/${enc(codigo)}?periodo=${periodo}`),
+  oferta: (codigo, periodo) => api(`/alumnos/${enc(codigo)}/oferta?periodo=${periodo}`),
   secciones: (periodo, { plan, curso } = {}) => {
     const params = new URLSearchParams()
     if (plan) params.set('plan', plan)
@@ -94,6 +98,14 @@ export const matriculaApi = {
   },
   crear: (payload) => api('/matriculas', json('POST', payload)),
   retirar: (matricula, seccion) => api(`/matriculas/${matricula}/detalle/${seccion}`, { method: 'DELETE' }),
+}
+
+export const carritoApi = {
+  ver: (codigo, periodo) => api(`/carrito/${enc(codigo)}?periodo=${periodo}`),
+  agregar: (codigo, periodo, secciones) => api(`/carrito/${enc(codigo)}`, json('POST', { id_periodo: periodo, secciones })),
+  quitar: (codigo, periodo, seccion) => api(`/carrito/${enc(codigo)}/${seccion}?periodo=${periodo}`, { method: 'DELETE' }),
+  vaciar: (codigo, periodo) => api(`/carrito/${enc(codigo)}?periodo=${periodo}`, { method: 'DELETE' }),
+  confirmar: (codigo, periodo) => api(`/carrito/${enc(codigo)}/confirmar`, json('POST', { id_periodo: periodo })),
 }
 
 export const planesApi = {
@@ -108,9 +120,9 @@ export const adminApi = {
   crearAlumno: (payload) => api('/alumnos', json('POST', payload)),
   actualizarAlumno: (codigo, payload) => api(`/alumnos/${enc(codigo)}`, json('PATCH', payload)),
   resetPassword: (codigo) => api(`/alumnos/${enc(codigo)}/reset-password`, json('POST')),
-  calificar: (codigo, codCurso, nota, idPeriodo) =>
-    api(`/alumnos/${enc(codigo)}/calificar`, json('POST', { cod_curso: codCurso, nota, ...(idPeriodo ? { id_periodo: idPeriodo } : {}) })),
-  registrarNota: (matricula, seccion, notaFinal) =>
-    api(`/matriculas/${matricula}/detalle/${seccion}/nota`, json('PATCH', { nota_final: notaFinal })),
+  // notas: { n1, n2, n3, sustitutorio, aplazado } o { nota }
+  calificar: (codigo, codCurso, notas) => api(`/alumnos/${enc(codigo)}/calificar`, json('POST', { cod_curso: codCurso, ...notas })),
+  solicitudesPassword: () => api('/admin/solicitudes-password'),
+  atenderSolicitud: (id, accion) => api(`/admin/solicitudes-password/${id}/atender`, json('POST', { accion })),
   actualizarPeriodo: (idPeriodo, estado) => api(`/periodos/${idPeriodo}`, json('PATCH', { estado })),
 }

@@ -1,3 +1,4 @@
+import { ArrowLeft, PlayCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
@@ -58,7 +59,7 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
 
           {onCambiarConfig && (
             <button type="button" className="btn-secondary-link" onClick={onCambiarConfig}>
-              ← Cambiar Período ({codPeriodo}), Plan o Ciclo
+              <ArrowLeft size={15} /> Cambiar Período ({codPeriodo}), Plan o Ciclo
             </button>
           )}
         </div>
@@ -98,7 +99,7 @@ export default function InfoMatricula({ periodo, onIniciar, onCambiarConfig }) {
               onClick={onIniciar}
               disabled={!abierto}
             >
-              Iniciar Matrícula
+              <PlayCircle size={20} /> Iniciar matrícula
             </button>
           </div>
         </div>

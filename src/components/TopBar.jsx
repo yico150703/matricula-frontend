@@ -1,4 +1,6 @@
+import { LogOut, Menu, Settings, Timer } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import logo from '../assets/logo-unfv.png'
 
 const formatTimer = (total) => {
   const m = Math.floor(total / 60)
@@ -20,27 +22,27 @@ export default function TopBar({ user, rol, onLogout, onToggleMenu, secondsLeft 
     <header className="unfv-topbar">
       <div className="topbar-left">
         <button type="button" className="topbar-menu-btn" onClick={onToggleMenu} aria-label="Abrir menú" title="Menú">
-          <span className="hamburger-icon">☰</span>
+          <Menu size={22} />
         </button>
-        <span className="topbar-title">Matrícula UNFV · FIIS</span>
+        <span className="topbar-logo">
+          <img src={logo} alt="UNFV" />
+        </span>
+        <span className="topbar-title">Matrícula FIIS</span>
       </div>
 
       <div className="topbar-right">
         <span className={`role-chip ${isAdmin ? 'role-admin' : 'role-alumno'}`}>{isAdmin ? 'Administrador' : 'Alumno'}</span>
 
-        <div
-          className={`topbar-timer ${lowTime ? 'timer-low' : ''}`}
-          title="La sesión se cierra tras 15 minutos sin actividad"
-        >
-          ⏱ {formatTimer(secondsLeft)}
+        <div className={`topbar-timer ${lowTime ? 'timer-low' : ''}`} title="La sesión se cierra tras 10 minutos sin actividad">
+          <Timer size={15} /> {formatTimer(secondsLeft)}
         </div>
 
         <button type="button" className="topbar-user" onClick={() => navigate('/configuracion')} title="Configuración de cuenta">
-          <span className="topbar-user-name">{nombre}</span> ⚙️
+          <span className="topbar-user-name">{nombre}</span> <Settings size={16} />
         </button>
 
         <button type="button" className="topbar-logout-btn" onClick={onLogout} title="Cerrar sesión">
-          <span className="power-icon">⏻</span> <span className="hide-sm">Salir</span>
+          <LogOut size={16} /> <span className="hide-sm">Salir</span>
         </button>
       </div>
     </header>

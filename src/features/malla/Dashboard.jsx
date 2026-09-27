@@ -34,7 +34,7 @@ export default function Dashboard({ alumno }) {
 
   return (
     <section className="page-stack">
-      <div className="section-title">
+      <div className="page-hero">
         <div>
           <p className="eyebrow">{planPorId(alumno.id_plan).nombre}</p>
           <h2>Mi malla curricular</h2>

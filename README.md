@@ -2,10 +2,12 @@
 
 SPA React + Vite con dos roles. El código está organizado por funcionalidades en `src/features` y todo acceso HTTP pasa por `src/api/client.js`.
 
-- **Alumno** (`/matricula`, `/malla`, `/horario`, `/historial`, `/configuracion`): se matricula y retira cursos, consulta su avance, horario e historial (solo lectura), descarga su ficha PDF y cambia su contraseña.
+- **Alumno** (`/matricula`, `/malla`, `/horario`, `/historial`, `/configuracion`): arma su matrícula por secciones A/B/C con un carrito (reserva de 10 minutos, cursos de su ciclo y de otros ciclos que repite), retira cursos, ve su horario semanal a colores, su historial con N1-N3 y descarga la ficha de matrícula y la boleta de notas en el formato UNFV.
 - **Administrador** (`/admin`, `/admin/alumnos`, `/admin/notas`, `/configuracion`): registra alumnos con solo código, nombres, apellidos y plan (el correo `código@unfv.edu.pe` y la contraseña inicial = código se generan solos), edita, desactiva, restablece contraseñas, registra notas y abre o cierra períodos.
 
-Primer ingreso: el alumno entra con su código como usuario y contraseña, y el sistema le obliga a cambiarla. El administrador entra con `admin` y la contraseña inicial configurada en el backend. La sesión se mantiene al recargar y se cierra tras 15 minutos de inactividad.
+Primer ingreso: el alumno entra con su código como usuario y contraseña, y el sistema le obliga a cambiarla. Si la olvida, usa "¿Olvidaste tu contraseña?" (`/recuperar`). La sesión se mantiene al recargar y se cierra tras 10 minutos de inactividad.
+
+Íconos: `lucide-react`. Colores institucionales UNFV (negro y naranja del logo). Para usar una foto de fondo en el inicio de sesión, coloca `public/img/campus.jpg`; si no existe se usa el patrón gráfico.
 
 ## Desarrollo local
 

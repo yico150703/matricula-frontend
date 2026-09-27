@@ -41,7 +41,7 @@ export default function Configuracion({ user, rol, onUserUpdated }) {
 
   return (
     <section className="page-stack">
-      <div className="section-title">
+      <div className="page-hero">
         <div>
           <p className="eyebrow">Mi cuenta</p>
           <h2>Configuración</h2>

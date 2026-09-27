@@ -1,3 +1,4 @@
+import { Ban, Check, CheckCircle2, ClipboardList, Copy, KeyRound, Pencil, RefreshCcw, Search, Target, UserCheck, UserPlus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminApi } from '../../api/client'
@@ -19,7 +20,7 @@ function CopyButton({ text }) {
   }
   return (
     <button type="button" className="btn-secondary btn-sm" onClick={copy}>
-      {copied ? '✓ Copiado' : 'Copiar'}
+      {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar</>}
     </button>
   )
 }
@@ -57,7 +58,7 @@ function EditarAlumnoModal({ alumno, onClose, onSaved }) {
             Editar alumno <span>{alumno.cod_alumno}</span>
           </h3>
           <button type="button" className="btn-close-modal" onClick={onClose} aria-label="Cerrar">
-            ✕
+            <X size={18} />
           </button>
         </div>
         <form className="modal-body form-grid" onSubmit={submit}>
@@ -187,7 +188,7 @@ export default function AdminAlumnos() {
 
   return (
     <section className="page-stack">
-      <div className="section-title">
+      <div className="page-hero">
         <div>
           <p className="eyebrow">Administración</p>
           <h2>Gestión de alumnos</h2>
@@ -195,7 +196,9 @@ export default function AdminAlumnos() {
       </div>
 
       <article className="panel-card">
-        <h3>➕ Registrar nuevo alumno</h3>
+        <h3>
+          <UserPlus size={19} /> Registrar nuevo alumno
+        </h3>
         <p className="muted small">
           Solo necesitas el código, nombres, apellidos y plan. El correo institucional se genera automáticamente y la
           contraseña inicial será el mismo código (el alumno deberá cambiarla en su primer ingreso).
@@ -250,7 +253,7 @@ export default function AdminAlumnos() {
         {creado && (
           <div className="credentials-box">
             <strong>
-              ✅ {creado.alumno.nombres} {creado.alumno.apellidos} registrado en {planPorId(creado.alumno.id_plan).corto}
+              <CheckCircle2 size={17} /> {creado.alumno.nombres} {creado.alumno.apellidos} registrado en {planPorId(creado.alumno.id_plan).corto}
             </strong>
             <p>Entrega estas credenciales al alumno:</p>
             <div className="cred-row">
@@ -274,11 +277,16 @@ export default function AdminAlumnos() {
 
       <article className="panel-card">
         <div className="card-head">
-          <h3>📋 Alumnos registrados ({alumnos?.length ?? 0})</h3>
+          <h3>
+            <ClipboardList size={19} /> Alumnos registrados ({alumnos?.length ?? 0})
+          </h3>
           <div className="toolbar">
-            <input className="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="🔍 Buscar por código, nombre o correo" />
+            <div className="search-wrap">
+              <Search size={16} />
+              <input className="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por código, nombre o correo" />
+            </div>
             <button type="button" className="btn-secondary btn-sm" onClick={load}>
-              🔄 Recargar
+              <RefreshCcw size={14} /> Recargar
             </button>
           </div>
         </div>
@@ -325,10 +333,10 @@ export default function AdminAlumnos() {
                     </td>
                     <td className="right actions-cell">
                       <button type="button" className="btn-secondary btn-sm" onClick={() => navigate(`/admin/notas?alumno=${al.cod_alumno}`)}>
-                        🎯 Notas
+                        <Target size={14} /> Notas
                       </button>
                       <button type="button" className="btn-secondary btn-sm" onClick={() => setEditando(al)}>
-                        ✏️ Editar
+                        <Pencil size={14} /> Editar
                       </button>
                       {confirmReset === al.cod_alumno ? (
                         <>
@@ -341,11 +349,11 @@ export default function AdminAlumnos() {
                         </>
                       ) : (
                         <button type="button" className="btn-secondary btn-sm" onClick={() => setConfirmReset(al.cod_alumno)} title="La contraseña vuelve a ser el código">
-                          🔑 Restablecer
+                          <KeyRound size={14} /> Restablecer
                         </button>
                       )}
                       <button type="button" className="btn-secondary btn-sm" onClick={() => toggleEstado(al)}>
-                        {al.estado === 'activo' ? '⛔ Desactivar' : '✅ Activar'}
+                        {al.estado === 'activo' ? <><Ban size={14} /> Desactivar</> : <><UserCheck size={14} /> Activar</>}
                       </button>
                     </td>
                   </tr>

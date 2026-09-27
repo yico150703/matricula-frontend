@@ -1,49 +1,40 @@
-import { useCallback, useEffect, useState } from 'react'
-import { ApiError, matriculaApi } from '../../api/client'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Download, MapPin, User } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { matriculaApi } from '../../api/client'
 import { Empty, ErrorState, Loading } from '../../components/AsyncState'
+import { colorCurso, DIAS_LARGOS, minutos, sesionesDe, TURNOS } from '../../utils/academico'
 
-const weekdays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const INICIO = 7 * 60 // 07:00
+const FIN = 22 * 60 + 30 // 22:30
+const PX_MIN = 0.95 // alto en píxeles por minuto
+
+const lunesDe = (fecha) => {
+  const d = new Date(fecha)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  return d
+}
+const ddmm = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
 
 export default function Horario({ alumno }) {
-  const [data, setData] = useState(null)
-  const [error, setError] = useState(null)
-  const [ocultosIds, setOcultosIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`horario_ocultos_${alumno?.cod_alumno}`)
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
-    }
-  })
-  const [autoHideApproved, setAutoHideApproved] = useState(false)
-  const [toastMessage, setToastMessage] = useState('')
   const [periodos, setPeriodos] = useState([])
   const [periodoId, setPeriodoId] = useState(null)
+  const [matricula, setMatricula] = useState(undefined)
+  const [error, setError] = useState(null)
+  const [semana, setSemana] = useState(() => lunesDe(new Date()))
+  const [activo, setActivo] = useState(null)
 
   const load = useCallback(async () => {
+    setError(null)
     try {
-      setError(null)
-      const periods = await matriculaApi.periodos()
-      const list = periods.periodos || []
+      const { periodos: list = [] } = await matriculaApi.periodos()
       setPeriodos(list)
-      const current =
-        list.find((item) => item.id_periodo === periodoId) || list.find((item) => item.estado === 'en_curso') || list[0]
-      if (!current) return setData({ period: null, details: [] })
-      if (current.id_periodo !== periodoId) setPeriodoId(current.id_periodo)
-
-      try {
-        const response = await matriculaApi.actual(alumno.cod_alumno, current.id_periodo)
-        setData({
-          period: current,
-          details: response.matricula.detalles.filter((item) => item.estado === 'matriculado'),
-        })
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 404) {
-          setData({ period: current, details: [] })
-        } else {
-          throw err
-        }
-      }
+      const actual = list.find((p) => p.id_periodo === periodoId) || list.find((p) => p.estado === 'en_curso') || list[0]
+      if (!actual) return setMatricula(null)
+      if (actual.id_periodo !== periodoId) setPeriodoId(actual.id_periodo)
+      const res = await matriculaApi.actual(alumno.cod_alumno, actual.id_periodo)
+      setMatricula(res.matricula)
     } catch (err) {
       setError(err)
     }
@@ -53,70 +44,61 @@ export default function Horario({ alumno }) {
     load()
   }, [load])
 
-  const handleBorrarDelCalendario = (item) => {
-    const newOcultos = [...ocultosIds, item.id]
-    setOcultosIds(newOcultos)
-    try {
-      localStorage.setItem(`horario_ocultos_${alumno?.cod_alumno}`, JSON.stringify(newOcultos))
-    } catch (e) {
-      console.warn(e)
-    }
+  const periodo = periodos.find((p) => p.id_periodo === periodoId)
+  const detalles = useMemo(() => (matricula?.detalles || []).filter((d) => d.estado === 'matriculado' && d.seccion), [matricula])
 
-    const cursoNom = item.seccion?.curso?.nombre_curso || item.seccion?.curso?.den_curso || 'La asignatura'
-    setToastMessage(
-      `🗑️ '${cursoNom}' fue retirado del calendario para que no estorbe. Tu aprobación con nota ${item.nota_final} se mantiene registrada en el historial.`
-    )
-    setTimeout(() => setToastMessage(''), 5000)
-  }
+  // Si la semana visible cae fuera del período, se muestra la primera o la última semana del período
+  useEffect(() => {
+    if (!periodo) return
+    const ini = lunesDe(new Date(`${periodo.fecha_inicio}T12:00:00`))
+    const fin = lunesDe(new Date(`${periodo.fecha_fin}T12:00:00`))
+    setSemana((s) => (s < ini ? ini : s > fin ? fin : s))
+  }, [periodo])
 
-  const handleRestaurarHorario = () => {
-    setOcultosIds([])
-    try {
-      localStorage.removeItem(`horario_ocultos_${alumno?.cod_alumno}`)
-    } catch (e) {
-      console.warn(e)
-    }
-    setToastMessage('🔄 Se han restaurado todos los cursos en tu calendario semanal.')
-    setTimeout(() => setToastMessage(''), 4000)
-  }
+  const bloques = useMemo(
+    () =>
+      detalles.flatMap((d) =>
+        sesionesDe(d.seccion).map((ses, i) => ({ key: `${d.id}-${i}`, d, ses, color: colorCurso(d.seccion.id_curso) })),
+      ),
+    [detalles],
+  )
+  const dias = useMemo(() => {
+    const usados = new Set(bloques.map((b) => b.ses.dia))
+    return [1, 2, 3, 4, 5, 6].filter((d) => d <= 5 || usados.has(d))
+  }, [bloques])
 
   if (error) return <ErrorState error={error} retry={load} />
-  if (!data) return <Loading />
-  if (!data.period) return <Empty>No hay períodos académicos configurados.</Empty>
+  if (matricula === undefined) return <Loading />
 
-  // Filtrado de cursos para el calendario semanal
-  const visibleDetails = data.details.filter((item) => {
-    // Si fue borrado manualmente por el usuario
-    if (ocultosIds.includes(item.id)) return false
-    // Si la opción de auto-ocultar cursos aprobados está activa
-    const isApproved = item.nota_final !== null && item.nota_final !== undefined && Number(item.nota_final) >= 11
-    if (autoHideApproved && isApproved) return false
-    return true
-  })
-
-  const approvedCount = data.details.filter(
-    (item) => item.nota_final !== null && Number(item.nota_final) >= 11
-  ).length
+  const horas = []
+  for (let m = INICIO; m < FIN; m += 60) horas.push(m)
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  const cambiarSemana = (delta) =>
+    setSemana((s) => {
+      const n = new Date(s)
+      n.setDate(n.getDate() + delta * 7)
+      return n
+    })
+  const totalCreditos = detalles.reduce((a, d) => a + Number(d.seccion.curso?.creditos || 0), 0)
 
   return (
-    <section>
-      <div className="section-title">
+    <section className="page-stack">
+      <div className="page-hero">
         <div>
-          <p className="eyebrow">Período {data.period.cod_per_acad} · UNFV FIIS</p>
-          <h2>Mi Horario Semanal</h2>
-          <p style={{ color: '#64748b', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
-            Visualiza la distribución de tus asignaturas matriculadas de Lunes a Sábado.
+          <p className="eyebrow">Período {periodo?.cod_per_acad} · FIIS</p>
+          <h1>Mi horario de clases</h1>
+          <p className="muted">
+            {detalles.length} asignaturas · {totalCreditos} créditos
           </p>
         </div>
-
-        {/* Controles de Calendario */}
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="toolbar wrap-sm">
           {periodos.length > 1 && (
             <select
               className="select-input"
               value={periodoId ?? ''}
               onChange={(e) => {
-                setData(null)
+                setMatricula(undefined)
                 setPeriodoId(Number(e.target.value))
               }}
               aria-label="Período académico"
@@ -128,200 +110,136 @@ export default function Horario({ alumno }) {
               ))}
             </select>
           )}
-          {approvedCount > 0 && (
-            <label
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                color: '#15803d',
-                background: '#dcfce7',
-                padding: '0.4rem 0.8rem',
-                borderRadius: '8px',
-                border: '1px solid #86efac',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={autoHideApproved}
-                onChange={(e) => setAutoHideApproved(e.target.checked)}
-              />
-              <span>Ocultar cursos ya aprobados ({approvedCount})</span>
-            </label>
-          )}
-
-          {ocultosIds.length > 0 && (
+          {matricula && (
             <button
               type="button"
-              onClick={handleRestaurarHorario}
-              style={{
-                background: '#f1f5f9',
-                border: '1px solid #cbd5e1',
-                color: '#334155',
-                padding: '0.4rem 0.8rem',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className="btn-secondary"
+              onClick={() => import('../../utils/generatePdf').then((m) => m.descargarFichaMatriculaPDF({ alumno, periodo, matricula }))}
             >
-              🔄 Restaurar borrados ({ocultosIds.length})
+              <Download size={16} /> Ficha PDF
             </button>
           )}
         </div>
       </div>
 
-      {toastMessage && (
-        <div
-          style={{
-            margin: '1rem 0',
-            padding: '0.85rem 1.25rem',
-            background: '#ecfdf5',
-            border: '1.5px solid #10b981',
-            borderRadius: '10px',
-            color: '#065f46',
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span>{toastMessage}</span>
-          <button
-            type="button"
-            onClick={() => setToastMessage('')}
-            style={{ background: 'none', border: 'none', color: '#065f46', cursor: 'pointer', fontSize: '1rem' }}
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {visibleDetails.length === 0 ? (
-        <div
-          style={{
-            padding: '3rem',
-            textAlign: 'center',
-            background: '#ffffff',
-            borderRadius: '12px',
-            border: '1px solid #e2e8f0',
-          }}
-        >
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🗓️</div>
-          <h3 style={{ color: '#0f172a', margin: '0 0 0.5rem 0' }}>No hay asignaturas activas en este horario</h3>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto' }}>
-            {data.details.length > 0
-              ? 'Todos tus cursos matriculados ya fueron aprobados y retirados del calendario para que no estorben.'
-              : 'Aún no tienes secciones matriculadas para el período académico actual.'}
-          </p>
-          {ocultosIds.length > 0 && (
-            <button
-              type="button"
-              onClick={handleRestaurarHorario}
-              style={{
-                marginTop: '1rem',
-                background: '#0f3b60',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.55rem 1.25rem',
-                borderRadius: '8px',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Mostrar cursos aprobados en el calendario
-            </button>
-          )}
-        </div>
+      {detalles.length === 0 ? (
+        <Empty>
+          <CalendarDays size={36} />
+          <span>No tienes asignaturas matriculadas en este período.</span>
+          <Link to="/matricula" className="btn-primary">
+            Ir a matrícula
+          </Link>
+        </Empty>
       ) : (
-        <div className="schedule">
-          {weekdays.map((day, index) => {
-            const dayCourses = visibleDetails.filter((item) => item.seccion?.dia === index + 1)
-            return (
-              <div className="day-column" key={day}>
-                <h3>{day}</h3>
-                {dayCourses.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem', padding: '1.5rem 0' }}>
-                    Sin clases
+        <>
+          <div className="week-nav">
+            <button type="button" className="btn-secondary btn-sm" onClick={() => cambiarSemana(-1)}>
+              <ChevronLeft size={16} /> Anterior
+            </button>
+            <button type="button" className="btn-secondary btn-sm" onClick={() => setSemana(lunesDe(new Date()))}>
+              <CalendarDays size={15} /> Esta semana
+            </button>
+            <button type="button" className="btn-secondary btn-sm" onClick={() => cambiarSemana(1)}>
+              Siguiente <ChevronRight size={16} />
+            </button>
+            <span className="week-label">
+              Semana del {ddmm(semana)} al {ddmm(new Date(semana.getTime() + 5 * 86400000))}
+            </span>
+          </div>
+
+          <div className="timetable-scroll">
+            <div className="timetable" style={{ '--cols': dias.length }}>
+              <div className="tt-corner" />
+              {dias.map((dia) => {
+                const fecha = new Date(semana)
+                fecha.setDate(semana.getDate() + dia - 1)
+                const esHoy = fecha.getTime() === hoy.getTime()
+                return (
+                  <div key={dia} className={`tt-dayhead ${esHoy ? 'today' : ''}`}>
+                    {DIAS_LARGOS[dia]} <span>{ddmm(fecha)}</span>
                   </div>
-                ) : (
-                  dayCourses.map((item) => {
-                    const isApproved =
-                      item.nota_final !== null &&
-                      item.nota_final !== undefined &&
-                      Number(item.nota_final) >= 11
-
-                    return (
-                      <article
-                        className="event"
-                        key={item.id}
-                        style={{
-                          background: isApproved ? '#f0fdf4' : '#e8f4ff',
-                          borderLeft: `4px solid ${isApproved ? '#16a34a' : '#1479c9'}`,
-                          position: 'relative',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <time style={{ fontWeight: 700 }}>
-                            {item.seccion?.hora_inicio}–{item.seccion?.hora_fin}
-                          </time>
-
-                          {/* Botón para borrar del calendario si está aprobado */}
-                          {isApproved && (
-                            <button
-                              type="button"
-                              onClick={() => handleBorrarDelCalendario(item)}
-                              title="Borrar del calendario para que no estorbe (ya aprobado)"
-                              style={{
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                color: '#dc2626',
-                                padding: '0.15rem 0.4rem',
-                                borderRadius: '4px',
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              🗑️ Borrar
-                            </button>
-                          )}
-                        </div>
-
-                        <strong>{item.seccion?.curso?.nombre_curso || item.seccion?.curso?.den_curso}</strong>
-                        <span>Sección {item.seccion?.num_seccion || item.seccion?.nro_seccion} · Aula {item.seccion?.num_aula || item.seccion?.aula}</span>
-                        <small>{item.seccion?.docente_nombre || item.seccion?.docente || 'Docente FIIS'}</small>
-
-                        {/* Estado académico */}
-                        {item.nota_final !== null && item.nota_final !== undefined && (
-                          <div style={{ marginTop: '0.35rem' }}>
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                fontSize: '0.74rem',
-                                fontWeight: 800,
-                                padding: '0.15rem 0.5rem',
-                                borderRadius: '4px',
-                                background: isApproved ? '#dcfce7' : '#fee2e2',
-                                color: isApproved ? '#15803d' : '#b91c1c',
-                              }}
-                            >
-                              {isApproved ? `✓ Aprobado (Nota: ${item.nota_final})` : `✗ Desaprobado (${item.nota_final})`}
-                            </span>
-                          </div>
-                        )}
-                      </article>
-                    )
-                  })
-                )}
+                )
+              })}
+              <div className="tt-hours" style={{ height: (FIN - INICIO) * PX_MIN }}>
+                {horas.map((m) => (
+                  <span key={m} style={{ top: (m - INICIO) * PX_MIN }}>
+                    {String(m / 60).padStart(2, '0')}:00
+                  </span>
+                ))}
               </div>
-            )
-          })}
-        </div>
+              {dias.map((dia) => {
+                const fecha = new Date(semana)
+                fecha.setDate(semana.getDate() + dia - 1)
+                const esHoy = fecha.getTime() === hoy.getTime()
+                return (
+                  <div key={dia} className={`tt-col ${esHoy ? 'today' : ''}`} style={{ height: (FIN - INICIO) * PX_MIN }}>
+                    {horas.map((m) => (
+                      <i key={m} className="tt-line" style={{ top: (m - INICIO) * PX_MIN }} />
+                    ))}
+                    {bloques
+                      .filter((b) => b.ses.dia === dia)
+                      .map((b) => {
+                        const top = (minutos(b.ses.hora_inicio) - INICIO) * PX_MIN
+                        const h = (minutos(b.ses.hora_fin) - minutos(b.ses.hora_inicio)) * PX_MIN
+                        const c = b.d.seccion.curso
+                        return (
+                          <button
+                            type="button"
+                            key={b.key}
+                            className={`tt-block ${activo === b.d.id ? 'active' : ''}`}
+                            style={{ top, height: h, '--c': b.color }}
+                            onClick={() => setActivo(activo === b.d.id ? null : b.d.id)}
+                            title={`${c?.nombre_curso} · Secc. ${b.d.seccion.cod_seccion} · ${b.d.seccion.docente}`}
+                          >
+                            <strong>
+                              {c?.abreviatura} <span>({b.d.seccion.cod_seccion})</span>
+                            </strong>
+                            <small>
+                              {b.ses.hora_inicio}–{b.ses.hora_fin}
+                            </small>
+                            {h > 60 && <small>{b.ses.ubicacion?.texto || b.ses.aula}</small>}
+                          </button>
+                        )
+                      })}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="legend-grid">
+            {detalles.map((d) => (
+              <article
+                key={d.id}
+                className={`legend-card ${activo === d.id ? 'active' : ''}`}
+                style={{ '--c': colorCurso(d.seccion.id_curso) }}
+                onMouseEnter={() => setActivo(d.id)}
+                onMouseLeave={() => setActivo(null)}
+              >
+                <header>
+                  <span className="legend-abrev">{d.seccion.curso?.abreviatura}</span>
+                  <div>
+                    <strong>{d.seccion.curso?.nombre_curso}</strong>
+                    <small>
+                      {d.seccion.curso?.codigo_curso} · Secc. {d.seccion.cod_seccion} · {TURNOS[d.seccion.turno]} · {d.seccion.curso?.creditos} cr.
+                    </small>
+                  </div>
+                </header>
+                <p>
+                  <User size={14} /> {d.seccion.docente}
+                </p>
+                {sesionesDe(d.seccion).map((s, i) => (
+                  <p key={i}>
+                    <Clock size={14} /> {DIAS_LARGOS[s.dia]} {s.hora_inicio}–{s.hora_fin}
+                    <span className="legend-room">
+                      <MapPin size={13} /> {s.ubicacion?.texto || s.aula}
+                    </span>
+                  </p>
+                ))}
+              </article>
+            ))}
+          </div>
+        </>
       )}
     </section>
   )

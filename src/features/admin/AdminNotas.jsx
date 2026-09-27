@@ -1,8 +1,9 @@
+import { Info, Save, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { adminApi, matriculaApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
-import { planPorId, romano } from '../../utils/academico'
+import { formatoNota, planPorId, redondear, romano } from '../../utils/academico'
 
 const ESTADOS = {
   aprobado: ['Aprobado', 'pill-ok'],
@@ -11,12 +12,34 @@ const ESTADOS = {
   disponible: ['Disponible', 'pill-muted'],
   bloqueado_por_prerrequisito: ['Bloqueado', 'pill-lock'],
 }
+const CAMPOS = ['n1', 'n2', 'n3', 'sustitutorio', 'aplazado']
+const ETIQUETA = { n1: 'N1', n2: 'N2', n3: 'N3', sustitutorio: 'Su', aplazado: 'Ap' }
+
+/** Misma regla que el servidor: media de N1-N3 (Su reemplaza a la menor), Ap manda si existe; redondeo desde .5 */
+function previsualizar(v) {
+  const num = (x) => (x === '' || x === null || x === undefined ? null : Number(x))
+  const parciales = ['n1', 'n2', 'n3'].map((k) => num(v[k])).filter((x) => x !== null && !Number.isNaN(x))
+  const su = num(v.sustitutorio)
+  const ap = num(v.aplazado)
+  let promedio = null
+  if (parciales.length) {
+    const vals = [...parciales]
+    if (su !== null) {
+      const i = vals.indexOf(Math.min(...vals))
+      if (su > vals[i]) vals[i] = su
+    }
+    promedio = redondear(vals.reduce((a, b) => a + b, 0) / vals.length)
+  }
+  const final = ap !== null ? redondear(ap) : promedio !== null ? promedio : num(v.nota) !== null ? redondear(num(v.nota)) : null
+  return { promedio, final }
+}
 
 function PanelNotas({ alumno }) {
   const [cursos, setCursos] = useState(null)
   const [notaMinima, setNotaMinima] = useState(11)
   const [error, setError] = useState(null)
-  const [inputs, setInputs] = useState({})
+  const [valores, setValores] = useState({})
+  const [modo, setModo] = useState({}) // id_curso -> 'parciales' | 'directa'
   const [saving, setSaving] = useState(null)
   const [feedback, setFeedback] = useState(null)
   const [ciclo, setCiclo] = useState('todos')
@@ -26,18 +49,24 @@ function PanelNotas({ alumno }) {
     setError(null)
     try {
       const [malla, hist] = await Promise.all([matriculaApi.malla(alumno.cod_alumno), matriculaApi.historial(alumno.cod_alumno)])
-      // Nota vigente por curso: la aprobada si existe, si no la más reciente
-      const notas = {}
+      const porCurso = {}
       for (const h of hist.historial || []) {
-        if (h.nota_final === null || h.estado !== 'matriculado') continue
-        const key = h.curso.id_curso
-        const prev = notas[key]
-        if (!prev || (h.estado_academico === 'aprobado' && prev.estado_academico !== 'aprobado')) notas[key] = h
+        if (h.estado !== 'matriculado') continue
+        const prev = porCurso[h.curso.id_curso]
+        const mejor = !prev || (h.nota_final === null && prev.nota_final !== null) || (h.estado_academico === 'aprobado' && prev.estado_academico !== 'aprobado')
+        if (mejor) porCurso[h.curso.id_curso] = h
       }
-      const list = (malla.cursos || []).map((c) => ({ ...c, nota: notas[c.id_curso]?.nota_final ?? null, periodoNota: notas[c.id_curso]?.periodo?.cod_per_acad }))
+      const list = (malla.cursos || []).map((c) => ({ ...c, registro: porCurso[c.id_curso] || null }))
       setCursos(list)
       setNotaMinima(malla.nota_minima ?? 11)
-      setInputs(Object.fromEntries(list.map((c) => [c.id_curso, c.nota ?? ''])))
+      setValores(
+        Object.fromEntries(
+          list.map((c) => [
+            c.id_curso,
+            Object.fromEntries([...CAMPOS, 'nota'].map((k) => [k, c.registro?.[k === 'nota' ? 'nota_final' : k] ?? ''])),
+          ]),
+        ),
+      )
     } catch (err) {
       setError(err)
     }
@@ -50,16 +79,15 @@ function PanelNotas({ alumno }) {
   }, [load])
 
   const guardar = async (curso) => {
-    const raw = inputs[curso.id_curso]
-    const nota = Number(raw)
-    if (raw === '' || !Number.isFinite(nota) || nota < 0 || nota > 20) {
-      setFeedback({ ok: false, text: 'Ingresa una nota válida entre 0 y 20.' })
-      return
-    }
+    const v = valores[curso.id_curso] || {}
+    const directa = (modo[curso.id_curso] || 'parciales') === 'directa'
+    const payload = directa ? { nota: v.nota } : Object.fromEntries(CAMPOS.map((k) => [k, v[k] === '' ? null : Number(v[k])]))
+    const fuera = Object.values(payload).some((x) => x !== null && x !== '' && (Number(x) < 0 || Number(x) > 20))
+    if (fuera) return setFeedback({ ok: false, text: 'Las notas deben estar entre 0 y 20.' })
     setSaving(curso.id_curso)
     setFeedback(null)
     try {
-      const res = await adminApi.calificar(alumno.cod_alumno, curso.cod_curso, nota)
+      const res = await adminApi.calificar(alumno.cod_alumno, curso.cod_curso, payload)
       setFeedback({ ok: res.es_aprobado, text: res.mensaje })
       await load()
     } catch (err) {
@@ -82,7 +110,7 @@ function PanelNotas({ alumno }) {
   if (!cursos) return <Loading />
 
   const aprobados = cursos.filter((c) => c.estado === 'aprobado')
-  const creditos = aprobados.reduce((s, c) => s + Number(c.creditos || 0), 0)
+  const set = (id, k, val) => setValores((s) => ({ ...s, [id]: { ...s[id], [k]: val } }))
 
   return (
     <>
@@ -92,7 +120,7 @@ function PanelNotas({ alumno }) {
           <span>Cursos aprobados de {cursos.length}</span>
         </div>
         <div className="stat">
-          <b>{creditos}</b>
+          <b>{aprobados.reduce((s, c) => s + Number(c.creditos || 0), 0)}</b>
           <span>Créditos aprobados</span>
         </div>
         <div className="stat">
@@ -106,13 +134,16 @@ function PanelNotas({ alumno }) {
       </div>
 
       <p className="info-strip">
-        Nota de <b>{notaMinima} a 20</b> aprueba y habilita los cursos que la tienen como prerrequisito. Nota menor a {notaMinima}{' '}
-        desaprueba. Si el alumno está matriculado en el curso, la nota se registra en esa matrícula.
+        <Info size={15} /> Registra N1, N2 y N3: el promedio se redondea al entero (desde x.5 sube: 10.5 = 11; 10.4 = 10). El
+        sustitutorio (Su) reemplaza a la nota más baja si es mayor y el aplazado (Ap), si existe, es la nota final. Aprueba con {notaMinima}.
       </p>
       {feedback && <p className={feedback.ok ? 'form-success' : 'form-error'}>{feedback.text}</p>}
 
       <div className="toolbar wrap">
-        <input className="search-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔍 Buscar curso" />
+        <div className="search-wrap">
+          <Search size={16} />
+          <input className="search-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar curso" />
+        </div>
         <div className="chips">
           <button type="button" className={`chip ${ciclo === 'todos' ? 'active' : ''}`} onClick={() => setCiclo('todos')}>
             Todos
@@ -126,66 +157,72 @@ function PanelNotas({ alumno }) {
       </div>
 
       <div className="table-scroll">
-        <table className="data-table">
+        <table className="data-table grades-editor">
           <thead>
             <tr>
               <th>Ciclo</th>
-              <th>Código</th>
               <th>Asignatura</th>
               <th>Estado</th>
-              <th>Nota actual</th>
-              <th className="right">Registrar nota</th>
+              <th>Registro de notas</th>
+              <th>Final</th>
+              <th />
             </tr>
           </thead>
           <tbody>
             {filtrados.map((c) => {
               const [label, cls] = ESTADOS[c.estado] || [c.estado, 'pill-muted']
-              const value = inputs[c.id_curso] ?? ''
-              const changed = String(value) !== String(c.nota ?? '')
+              const v = valores[c.id_curso] || {}
+              const m = modo[c.id_curso] || 'parciales'
+              const prev = previsualizar(m === 'directa' ? { nota: v.nota } : v)
               return (
                 <tr key={c.id_curso}>
                   <td>{romano(c.ciclo)}</td>
                   <td>
-                    <code className="code-chip light">{c.codigo_curso}</code>
-                  </td>
-                  <td>
                     <strong>{c.nombre_curso}</strong>
-                    <div className="small muted">{c.creditos} créditos</div>
+                    <div className="small muted">
+                      {c.codigo_curso} · {c.creditos} cr.
+                      {c.registro?.periodo && ` · ${c.registro.periodo.cod_per_acad} secc. ${c.registro.seccion}`}
+                    </div>
                   </td>
                   <td>
                     <span className={`pill ${cls}`}>{label}</span>
                   </td>
                   <td>
-                    {c.nota !== null ? (
-                      <span className={`grade-badge ${c.nota >= notaMinima ? 'ok' : 'bad'}`}>
-                        {c.nota} <small>{c.periodoNota}</small>
-                      </span>
+                    <div className="grade-inputs">
+                      <select
+                        value={m}
+                        onChange={(e) => setModo((s) => ({ ...s, [c.id_curso]: e.target.value }))}
+                        aria-label="Tipo de registro"
+                      >
+                        <option value="parciales">N1-N3</option>
+                        <option value="directa">Nota final</option>
+                      </select>
+                      {m === 'directa' ? (
+                        <label>
+                          <span>Nota</span>
+                          <input type="number" min="0" max="20" step="0.1" value={v.nota ?? ''} onChange={(e) => set(c.id_curso, 'nota', e.target.value)} />
+                        </label>
+                      ) : (
+                        CAMPOS.map((k) => (
+                          <label key={k} className={k === 'sustitutorio' || k === 'aplazado' ? 'opt' : ''}>
+                            <span>{ETIQUETA[k]}</span>
+                            <input type="number" min="0" max="20" step="0.1" value={v[k] ?? ''} onChange={(e) => set(c.id_curso, k, e.target.value)} />
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    {prev.final !== null ? (
+                      <span className={`grade-badge ${prev.final >= notaMinima ? 'ok' : 'bad'}`}>{formatoNota(prev.final)}</span>
                     ) : (
                       '—'
                     )}
                   </td>
                   <td className="right">
-                    <form
-                      className="grade-form"
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        guardar(c)
-                      }}
-                    >
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        step="0.5"
-                        value={value}
-                        aria-label={`Nota de ${c.nombre_curso}`}
-                        onChange={(e) => setInputs((s) => ({ ...s, [c.id_curso]: e.target.value }))}
-                        className={value === '' ? '' : Number(value) >= notaMinima ? 'ok' : 'bad'}
-                      />
-                      <button className="btn-primary btn-sm" disabled={saving === c.id_curso || value === '' || !changed}>
-                        {saving === c.id_curso ? '…' : 'Guardar'}
-                      </button>
-                    </form>
+                    <button type="button" className="btn-primary btn-sm" disabled={saving === c.id_curso || prev.final === null} onClick={() => guardar(c)}>
+                      <Save size={14} /> {saving === c.id_curso ? '…' : 'Guardar'}
+                    </button>
                   </td>
                 </tr>
               )
@@ -224,21 +261,20 @@ export default function AdminNotas() {
 
   return (
     <section className="page-stack">
-      <div className="section-title">
+      <div className="page-hero">
         <div>
           <p className="eyebrow">Administración</p>
-          <h2>Calificaciones</h2>
+          <h1>Calificaciones</h1>
         </div>
       </div>
 
       <article className="panel-card">
         <div className="toolbar wrap">
-          <input className="search-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔍 Filtrar alumnos" />
-          <select
-            className="select-input"
-            value={selectedCode}
-            onChange={(e) => setParams(e.target.value ? { alumno: e.target.value } : {})}
-          >
+          <div className="search-wrap">
+            <Search size={16} />
+            <input className="search-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filtrar alumnos" />
+          </div>
+          <select className="select-input" value={selectedCode} onChange={(e) => setParams(e.target.value ? { alumno: e.target.value } : {})}>
             <option value="">— Selecciona un alumno ({opciones.length}) —</option>
             {opciones.map((a) => (
               <option key={a.cod_alumno} value={a.cod_alumno}>

@@ -1,3 +1,4 @@
+import { ArrowRight, CalendarRange, GraduationCap } from 'lucide-react'
 import { useState } from 'react'
 import { esPeriodoImpar, planPorId, romano } from '../../utils/academico'
 
@@ -7,7 +8,7 @@ const mesAnio = (iso) => {
   return y && m ? `${MESES[Number(m) - 1]} ${y}` : ''
 }
 
-export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, onConfirm }) {
+export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, cicloActual, onConfirm }) {
   const [selPeriodo, setSelPeriodo] = useState(periodo)
   const [selCiclo, setSelCiclo] = useState(ciclo)
   const plan = planPorId(alumno?.id_plan)
@@ -48,7 +49,7 @@ export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, on
         <form onSubmit={submit} className="selector-form">
           <div className="selector-section">
             <h3 className="section-subtitle">
-              <span className="step-number">1</span> Período académico
+              <span className="step-number">1</span> <CalendarRange size={18} /> Período académico
             </h3>
             {!hayAbiertos && <p className="form-error">No hay períodos abiertos para matrícula en este momento.</p>}
             <div className="periodos-grid-selector">
@@ -79,7 +80,7 @@ export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, on
 
           <div className="selector-section">
             <h3 className="section-subtitle">
-              <span className="step-number">2</span> Tu plan curricular
+              <span className="step-number">2</span> <GraduationCap size={18} /> Tu plan curricular
             </h3>
             <div className="plan-option-card selected plan-fixed">
               <div className="plan-card-top">
@@ -99,10 +100,13 @@ export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, on
               {ciclos.map((n) => (
                 <button key={n} type="button" className={`ciclo-btn ${selCiclo === n ? 'active' : ''}`} onClick={() => setSelCiclo(n)}>
                   <strong>Ciclo {romano(n)}</strong>
-                  <small>{Math.ceil(n / 2)}° año</small>
+                  <small>{n === cicloActual ? 'Tu nivel actual' : `${Math.ceil(n / 2)}.º año`}</small>
                 </button>
               ))}
             </div>
+            <p className="muted small">
+              En el siguiente paso también podrás agregar cursos de otros ciclos (por ejemplo, los que necesitas volver a llevar).
+            </p>
             <div className="ciclo-helper-text">
               Seleccionaste: <strong>Ciclo {romano(selCiclo)}</strong> para el <strong>período {selPeriodo?.cod_per_acad}</strong>.
             </div>
@@ -110,7 +114,7 @@ export default function PlanCicloSelector({ alumno, periodos, periodo, ciclo, on
 
           <div className="selector-actions">
             <button type="submit" className="btn-continue-matricula" disabled={!selPeriodo || selPeriodo.estado !== 'en_curso'}>
-              Continuar ➔
+              Continuar <ArrowRight size={18} />
             </button>
           </div>
         </form>

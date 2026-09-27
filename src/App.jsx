@@ -1,4 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
+import {
+  BookOpenCheck,
+  CalendarDays,
+  ClipboardPen,
+  GraduationCap,
+  LayoutDashboard,
+  LogOut,
+  Network,
+  ScrollText,
+  Settings,
+  Target,
+  Users,
+  X,
+} from 'lucide-react'
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { SESSION_EXPIRED_EVENT, authApi, session } from './api/client'
 import TopBar from './components/TopBar'
@@ -8,6 +22,8 @@ import AdminDashboard from './features/admin/AdminDashboard'
 import AdminNotas from './features/admin/AdminNotas'
 import CambioPasswordObligatorio from './features/auth/CambioPasswordObligatorio'
 import Login from './features/auth/Login'
+import Recuperar from './features/auth/Recuperar'
+import Restablecer from './features/auth/Restablecer'
 import Configuracion from './features/configuracion/Configuracion'
 import DiagramaERModal from './features/diagrama/DiagramaERModal'
 import Historial from './features/historial/Historial'
@@ -16,21 +32,23 @@ import Dashboard from './features/malla/Dashboard'
 import Matricula from './features/matricula/Matricula'
 import { planPorId } from './utils/academico'
 
-const INACTIVIDAD_SEGUNDOS = 15 * 60
+// OWASP recomienda cerrar por inactividad entre 2-5 min (alto riesgo) y 15-30 min (bajo riesgo).
+// Para una sesión de matrícula se usa un punto intermedio: 10 minutos.
+export const INACTIVIDAD_SEGUNDOS = 10 * 60
 
 const NAV = {
   alumno: [
-    ['/matricula', 'Registro de Matrícula', '📝'],
-    ['/malla', 'Mi Malla Curricular', '🗺️'],
-    ['/horario', 'Mi Horario', '📅'],
-    ['/historial', 'Historial Académico', '📜'],
-    ['/configuracion', 'Configuración de cuenta', '⚙️'],
+    ['/matricula', 'Registro de matrícula', ClipboardPen],
+    ['/malla', 'Mi malla curricular', Network],
+    ['/horario', 'Mi horario', CalendarDays],
+    ['/historial', 'Historial académico', ScrollText],
+    ['/configuracion', 'Configuración de cuenta', Settings],
   ],
   admin: [
-    ['/admin', 'Panel de control', '📊'],
-    ['/admin/alumnos', 'Gestión de alumnos', '👥'],
-    ['/admin/notas', 'Calificaciones', '🎯'],
-    ['/configuracion', 'Configuración de cuenta', '⚙️'],
+    ['/admin', 'Panel de control', LayoutDashboard],
+    ['/admin/alumnos', 'Gestión de alumnos', Users],
+    ['/admin/notas', 'Calificaciones', Target],
+    ['/configuracion', 'Configuración de cuenta', Settings],
   ],
 }
 
@@ -48,16 +66,17 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
       <aside className={`unfv-drawer ${menuOpen ? 'open' : ''}`} aria-hidden={!menuOpen}>
         <div className="drawer-header">
           <div className="drawer-brand">
+            <GraduationCap size={26} className="drawer-brand-icon" />
             <span className="drawer-brand-sub">UNFV · FIIS</span>
             <strong>{isAdmin ? 'Administración de Matrícula' : 'Ingeniería de Sistemas'}</strong>
           </div>
           <button type="button" className="drawer-close-btn" onClick={closeMenu} aria-label="Cerrar menú">
-            ✕
+            <X size={20} />
           </button>
         </div>
 
         <nav className="drawer-nav">
-          {NAV[rol].map(([to, label, icon]) => (
+          {NAV[rol].map(([to, label, Icon]) => (
             <NavLink
               key={to}
               to={to}
@@ -65,7 +84,7 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
               className={({ isActive }) => `drawer-nav-item ${isActive ? 'active' : ''}`}
               onClick={closeMenu}
             >
-              <span className="nav-icon">{icon}</span>
+              <Icon size={19} className="nav-icon" />
               <span className="nav-label">{label}</span>
             </NavLink>
           ))}
@@ -78,7 +97,7 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
                 setDiagramaOpen(true)
               }}
             >
-              <span className="nav-icon">🧩</span>
+              <BookOpenCheck size={19} className="nav-icon" />
               <span className="nav-label">Diagrama E-R</span>
             </button>
           )}
@@ -100,7 +119,7 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
             )}
           </div>
           <button type="button" className="drawer-logout-btn" onClick={onLogout}>
-            Cerrar sesión
+            <LogOut size={16} /> Cerrar sesión
           </button>
         </div>
       </aside>
@@ -170,7 +189,7 @@ export default function App() {
   }, [logout])
 
   const secondsLeft = useInactivityTimer(Boolean(auth), INACTIVIDAD_SEGUNDOS, () =>
-    logout('Se cerró la sesión por 15 minutos de inactividad.'),
+    logout('Se cerró la sesión por 10 minutos de inactividad.'),
   )
 
   const loggedIn = (user, rol, token) => {
@@ -192,6 +211,8 @@ export default function App() {
             path="/login"
             element={<Login onLoggedIn={loggedIn} notice={notice} onOpenDiagramaER={() => setDiagramaOpen(true)} />}
           />
+          <Route path="/recuperar" element={<Recuperar />} />
+          <Route path="/restablecer" element={<Restablecer />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
         <DiagramaERModal isOpen={diagramaOpen} onClose={() => setDiagramaOpen(false)} />

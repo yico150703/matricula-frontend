@@ -1,3 +1,4 @@
+import { Link2, ListTree, Network, Pin, X, ZoomIn, ZoomOut } from 'lucide-react'
 import React, { useState } from 'react'
 
 export default function DiagramaERModal({ isOpen, onClose }) {
@@ -280,7 +281,7 @@ export default function DiagramaERModal({ isOpen, onClose }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <span style={{ fontSize: '1.75rem' }}>📊</span>
+            <Network size={28} />
             <div>
               <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#f8fafc' }}>
                 Diagrama Entidad-Relación (DER) — Base de Datos Oficial
@@ -299,7 +300,7 @@ export default function DiagramaERModal({ isOpen, onClose }) {
                 onClick={() => setZoom((z) => Math.max(0.6, z - 0.1))}
                 title="Alejar"
               >
-                🔍 -
+                <ZoomOut size={16} />
               </button>
               <span style={{ fontSize: '0.75rem', color: '#cbd5e1', padding: '0 0.4rem', fontWeight: 600 }}>
                 {Math.round(zoom * 100)}%
@@ -309,7 +310,7 @@ export default function DiagramaERModal({ isOpen, onClose }) {
                 onClick={() => setZoom((z) => Math.min(1.4, z + 0.1))}
                 title="Acercar"
               >
-                🔍 +
+                <ZoomIn size={16} />
               </button>
               <button
                 style={{ background: 'none', border: 'none', color: '#38bdf8', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
@@ -333,7 +334,7 @@ export default function DiagramaERModal({ isOpen, onClose }) {
                 fontSize: '1rem',
               }}
             >
-              ✕
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -358,21 +359,21 @@ export default function DiagramaERModal({ isOpen, onClose }) {
               onClick={() => setActiveTab('diagrama')}
               style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', fontWeight: 600 }}
             >
-              🖼️ Diagrama Visual (Foto Modelo)
+              <Network size={15} /> Diagrama visual
             </button>
             <button
               className={`cycle-tab-btn ${activeTab === 'verbos' ? 'active' : ''}`}
               onClick={() => setActiveTab('verbos')}
               style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', fontWeight: 600 }}
             >
-              🔗 Matriz de Relaciones y Verbos ({relations.length})
+              <Link2 size={15} /> Relaciones y verbos ({relations.length})
             </button>
             <button
               className={`cycle-tab-btn ${activeTab === 'diccionario' ? 'active' : ''}`}
               onClick={() => setActiveTab('diccionario')}
               style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', fontWeight: 600 }}
             >
-              📑 Diccionario de Datos ({tables.length} Tablas)
+              <ListTree size={15} /> Diccionario de datos ({tables.length} tablas)
             </button>
           </div>
 
@@ -430,7 +431,7 @@ export default function DiagramaERModal({ isOpen, onClose }) {
               {/* Conectores con Verbos de Relación */}
               <div style={{ position: 'relative', zIndex: 5, marginBottom: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <span>📌 Leyenda de Verbos:</span>
+                  <span><Pin size={14} /> Leyenda de verbos:</span>
                   <span style={{ color: '#0284c7', background: '#e0f2fe', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>[Verbo] = Acción Relacional</span>
                   <span style={{ color: '#059669', background: '#ecfdf5', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>PK = Primary Key (Subrayada)</span>
                   <span style={{ color: '#d97706', background: '#fef3c7', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>FK = Foreign Key</span>
@@ -540,7 +541,7 @@ export default function DiagramaERModal({ isOpen, onClose }) {
               {/* Tarjetas de Relaciones con Verbos Explícitos */}
               <div style={{ marginTop: '3rem', zIndex: 10, position: 'relative' }}>
                 <h4 style={{ margin: '0 0 1rem 0', fontSize: '1.05rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  🔗 Conexiones Relacionales con sus Verbos de Asociación
+                  <Link2 size={16} /> Conexiones relacionales con sus verbos de asociación
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
                   {relations.map((rel, rIdx) => (

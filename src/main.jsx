@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { TriangleAlert } from 'lucide-react'
 import App from './App'
 import './styles.css'
 
@@ -20,7 +21,7 @@ class ErrorBoundary extends React.Component {
       return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', padding: '2rem' }}>
           <div style={{ background: '#fff', borderRadius: '12px', padding: '2rem', maxWidth: '540px', width: '100%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)', textAlign: 'center' }}>
-            <span style={{ fontSize: '3rem' }}>⚠️</span>
+            <TriangleAlert size={48} color="#EE6A1F" />
             <h2 style={{ color: '#0f172a', margin: '0.75rem 0' }}>Se presentó un problema al cargar</h2>
             <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
               {this.state.error?.message || 'Ha ocurrido un error inesperado en la interfaz.'}

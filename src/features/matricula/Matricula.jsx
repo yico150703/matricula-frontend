@@ -14,19 +14,26 @@ export default function Matricula({ alumno }) {
   const [periodo, setPeriodo] = useState(null)
   const [ciclo, setCiclo] = useState(1)
 
+  const [cicloActual, setCicloActual] = useState(1)
+
   const load = useCallback(() => {
     setError(null)
-    matriculaApi
-      .periodos()
-      .then((data) => {
+    Promise.all([matriculaApi.periodos(), matriculaApi.malla(alumno.cod_alumno)])
+      .then(([data, malla]) => {
         const list = data.periodos || []
         setPeriodos(list)
+        const actual = malla.ciclo_actual || 1
+        setCicloActual(actual)
         const abierto = list.find((p) => p.estado === 'en_curso') || list[0] || null
         setPeriodo(abierto)
-        if (abierto) setCiclo(esPeriodoImpar(abierto.cod_per_acad) ? 1 : 2)
+        if (abierto) {
+          // Ciclo sugerido: el nivel del alumno, ajustado a la paridad del período
+          const impar = esPeriodoImpar(abierto.cod_per_acad)
+          setCiclo(impar === (actual % 2 === 1) ? actual : Math.min(10, actual + 1))
+        }
       })
       .catch(setError)
-  }, [])
+  }, [alumno.cod_alumno])
   useEffect(load, [load])
 
   if (error) return <ErrorState error={error} retry={load} />
@@ -41,6 +48,7 @@ export default function Matricula({ alumno }) {
           periodos={periodos}
           periodo={periodo}
           ciclo={ciclo}
+          cicloActual={cicloActual}
           onConfirm={(p, c) => {
             setPeriodo(p)
             setCiclo(c)
