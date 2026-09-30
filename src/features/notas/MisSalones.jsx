@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom'
 import { notasApi } from '../../api/client'
 import { Empty, ErrorState, Loading } from '../../components/AsyncState'
 import { colorCurso, romano, TURNOS } from '../../utils/academico'
-import { useProceso } from '../proceso/ProcesoContext'
+import { PeriodoSelect, usePeriodoConsulta } from '../proceso/ProcesoContext'
 import { EstadoActa } from './comun'
 
 /** Salones del docente en el período elegido en la barra de fases, con el estado de su acta de notas. */
 export default function MisSalones() {
-  const { periodoId, proceso } = useProceso()
+  const { periodoId, proceso, opciones, elegir, cargado } = usePeriodoConsulta()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
 
@@ -27,6 +27,13 @@ export default function MisSalones() {
     cargar()
   }, [cargar])
 
+  if (cargado && !periodoId)
+    return (
+      <Empty>
+        <BookOpenCheck size={36} />
+        <span>Aún no hay períodos con horarios establecidos. Tus salones aparecerán cuando se abra la matrícula.</span>
+      </Empty>
+    )
   if (error) return <ErrorState error={error} retry={cargar} />
   if (!data) return <Loading />
   const pendientes = data.salones.filter((s) => ['sin_acta', 'borrador', 'observada'].includes(s.acta.estado)).length
@@ -39,6 +46,8 @@ export default function MisSalones() {
           <h1>Mis salones y notas</h1>
           <p className="muted">Registra las notas de cada alumno, sube el acta firmada en PDF y envíala al Director de Escuela para su aprobación.</p>
         </div>
+        <div className="toolbar">
+          <PeriodoSelect periodoId={periodoId} opciones={opciones} onChange={elegir} />
         <div className="hero-stats">
           <span>
             <b>{data.salones.length}</b> salones
@@ -46,6 +55,7 @@ export default function MisSalones() {
           <span className={pendientes ? 'warn' : ''}>
             <b>{pendientes}</b> actas pendientes
           </span>
+        </div>
         </div>
       </div>
 

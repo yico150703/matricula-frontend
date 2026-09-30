@@ -2570,3 +2570,12 @@ svg { flex-shrink: 0; }
   .nota-input { width: 3rem; font-size: 0.85rem; }
   .subir-acta .btn-primary { width: 100%; justify-content: center; }
 }
+
+/* Bloques horarios del Jefe de Departamento */
+.sesiones-pie { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; justify-content: space-between; }
+.horas-plan { font-size: 0.8rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 999px; }
+.horas-plan.ok { background: #dcfce7; color: #166534; }
+.horas-plan.falta { background: #fee2e2; color: #b91c1c; }
+.sesiones-editor select.invalida { border-color: #dc2626; background: #fee2e2; }
+.calendario-preview { text-transform: none; }
+.fase-periodo { padding: 0.35rem 0.85rem; font-weight: 700; font-size: 0.85rem; }

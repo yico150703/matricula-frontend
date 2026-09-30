@@ -150,6 +150,7 @@ export const adminApi = {
   solicitudesPassword: () => api('/admin/solicitudes-password'),
   atenderSolicitud: (id, accion) => api(`/admin/solicitudes-password/${id}/atender`, json('POST', { accion })),
   crearPeriodo: (payload) => api('/admin/periodos', json('POST', payload)),
+  borrarPeriodo: (idPeriodo) => api(`/admin/periodos/${idPeriodo}`, { method: 'DELETE' }),
   // Personal: jefe de departamento, director, asistente, docentes y administradores
   personal: () => api('/admin/usuarios'),
   crearPersonal: (payload) => api('/admin/usuarios', json('POST', payload)),

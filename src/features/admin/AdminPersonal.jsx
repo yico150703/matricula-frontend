@@ -10,13 +10,31 @@ const ROLES = {
   docente: 'Docente',
   admin: 'Administrador del sistema'
 }
-const DOMINIO = 'unfv.pe'
+const DOMINIO = 'unfv.edu.pe'
+const PARTICULAS = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'san', 'santa'])
 
+/** Igual que el servidor: inicial del nombre + apellido paterno + inicial del materno (José Alvarado Torres -> jalvaradot). */
 const vistaPrevia = (nombres, apellidos) => {
-  const limpio = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-  const ini = limpio(nombres.trim()).charAt(0)
-  const ape = limpio(apellidos).replace(/[^a-z]/g, '')
-  return ini || ape ? `${ini}${ape}` : ''
+  const limpio = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const ini = limpio(nombres).replace(/[^a-z]/g, '').charAt(0)
+  const palabras = limpio(apellidos)
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-z]/g, ''))
+    .filter(Boolean)
+  const bloques = []
+  let pendiente = ''
+  for (const w of palabras) {
+    if (PARTICULAS.has(w)) {
+      pendiente += w
+      continue
+    }
+    bloques.push(pendiente + w)
+    pendiente = ''
+  }
+  if (pendiente) bloques.push(pendiente)
+  const paterno = bloques[0] || ''
+  const materno = bloques.length > 1 ? palabras[palabras.length - 1].charAt(0) : ''
+  return ini || paterno ? `${ini}${paterno}${materno}` : ''
 }
 
 export default function AdminPersonal() {

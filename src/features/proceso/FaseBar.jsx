@@ -36,7 +36,7 @@ const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
 export default function FaseBar() {
   const ctx = useProceso()
   if (!ctx?.procesos) return ctx?.error ? null : <div className="fase-bar fase-bar-loading" />
-  const { procesos, proceso, elegir } = ctx
+  const { proceso } = ctx
   if (!proceso) return null
   const cerrado = proceso.fase >= 7
   // Porcentaje del trazo: llega al centro del paso actual (o al final si está cerrado)
@@ -45,16 +45,10 @@ export default function FaseBar() {
   return (
     <section className={`fase-bar ${cerrado ? 'is-closed' : ''}`} aria-label="Fase del proceso de horarios">
       <div className="fase-bar-top">
-        <label className="fase-periodo">
-          <CalendarClock size={16} />
-          <select value={proceso.id_periodo} onChange={(e) => elegir(Number(e.target.value))} aria-label="Período">
-            {procesos.map((p) => (
-              <option key={p.id_periodo} value={p.id_periodo}>
-                Período {p.periodo.cod_per_acad} · {p.fase >= 7 ? 'cerrado' : `fase ${p.fase}`}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* El período es el que está en proceso: se elige solo, nadie cambia de fase a mano */}
+        <span className="fase-periodo">
+          <CalendarClock size={16} /> Período {proceso.periodo.cod_per_acad}
+        </span>
         <div className="fase-actual">
           {cerrado ? (
             <>

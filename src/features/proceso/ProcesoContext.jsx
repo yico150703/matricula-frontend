@@ -4,17 +4,17 @@ import { Empty, ErrorState, Loading } from '../../components/AsyncState'
 
 const Ctx = createContext(null)
 
-/** Período seleccionado y estado del proceso de horarios, compartido por las pantallas del personal. */
-export function ProcesoProvider({ children, rol }) {
+/** Período en proceso: el que se está programando (fases 1-4); si no hay, el de matrícula/ajustes (5-6);
+ *  si no, el más reciente. Se elige solo: nadie cambia de período ni de fase a mano. */
+const periodoEnProceso = (procesos) => {
+  const orden = (p) => (p.fase <= 4 ? 0 : p.fase <= 6 ? 1 : 2)
+  return [...procesos].sort((a, b) => orden(a) - orden(b) || (orden(a) === 0 ? a.id_periodo - b.id_periodo : b.id_periodo - a.id_periodo))[0]
+}
+
+/** Estado del proceso de horarios compartido por las pantallas del personal. */
+export function ProcesoProvider({ children }) {
   const [procesos, setProcesos] = useState(null)
   const [aulas, setAulas] = useState([])
-  const [periodoId, setPeriodoId] = useState(() => {
-    try {
-      return Number(sessionStorage.getItem('proceso_periodo')) || null
-    } catch {
-      return null
-    }
-  })
   const [error, setError] = useState(null)
 
   const recargar = useCallback(async () => {
@@ -23,48 +23,56 @@ export function ProcesoProvider({ children, rol }) {
       setProcesos(res.procesos)
       setAulas(res.aulas || [])
       setError(null)
-      setPeriodoId((actual) => {
-        if (actual && res.procesos.some((p) => p.id_periodo === actual)) return actual
-        // Por defecto: el período que se está programando (fases 1-4), luego matrícula/ajustes (5-6).
-        // El docente ve primero donde ya tiene horario publicado (fases 4-6).
-        const orden = rol === 'docente' ? (p) => (p.fase >= 4 && p.fase <= 6 ? 0 : p.fase === 7 ? 1 : 2) : (p) => (p.fase <= 4 ? 0 : p.fase <= 6 ? 1 : 2)
-        const elegido = [...res.procesos].sort((a, b) => orden(a) - orden(b) || b.id_periodo - a.id_periodo)[0]
-        return elegido?.id_periodo ?? null
-      })
     } catch (err) {
       setError(err)
     }
-  }, [rol])
+  }, [])
 
   useEffect(() => {
     recargar()
   }, [recargar])
 
-  const elegir = useCallback((id) => {
-    setPeriodoId(id)
-    try {
-      sessionStorage.setItem('proceso_periodo', String(id))
-    } catch {
-      /* noop */
-    }
-  }, [])
-
-  const value = useMemo(
-    () => ({
-      procesos,
-      aulas,
-      error,
-      periodoId,
-      proceso: procesos?.find((p) => p.id_periodo === periodoId) || null,
-      elegir,
-      recargar
-    }),
-    [procesos, aulas, error, periodoId, elegir, recargar]
-  )
+  const value = useMemo(() => {
+    const proceso = procesos?.length ? periodoEnProceso(procesos) : null
+    return { procesos, aulas, error, periodoId: proceso?.id_periodo ?? null, proceso, recargar }
+  }, [procesos, aulas, error, recargar])
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
 export const useProceso = () => useContext(Ctx)
+
+/** Para consultar otros períodos (horario del docente, salones y actas de notas): solo los que ya tienen
+ *  horarios publicados (desde `minFase`). Por defecto el que el usuario más probablemente necesita. */
+export function usePeriodoConsulta({ minFase = 5, preferir = [5, 6, 4, 7] } = {}) {
+  const ctx = useProceso()
+  const [propios, setPropios] = useState(null)
+  const [elegido, setElegido] = useState(null)
+  useEffect(() => {
+    if (ctx) return
+    procesoApi
+      .periodos()
+      .then((r) => setPropios(r.procesos))
+      .catch(() => setPropios([]))
+  }, [ctx])
+  const lista = ctx ? ctx.procesos : propios
+  const opciones = useMemo(() => (lista || []).filter((p) => p.fase >= minFase).sort((a, b) => b.id_periodo - a.id_periodo), [lista, minFase])
+  const porDefecto = preferir.map((f) => opciones.find((p) => p.fase === f)).find(Boolean) || opciones[0]
+  const periodoId = opciones.some((p) => p.id_periodo === elegido) ? elegido : (porDefecto?.id_periodo ?? null)
+  return { periodoId, elegir: setElegido, opciones, cargado: lista != null, proceso: opciones.find((p) => p.id_periodo === periodoId) || null }
+}
+
+export function PeriodoSelect({ periodoId, opciones, onChange }) {
+  if (!opciones || opciones.length < 2) return null
+  return (
+    <select className="select-input" value={periodoId ?? ''} onChange={(e) => onChange(Number(e.target.value))} aria-label="Período">
+      {opciones.map((p) => (
+        <option key={p.id_periodo} value={p.id_periodo}>
+          Período {p.periodo.cod_per_acad}
+        </option>
+      ))}
+    </select>
+  )
+}
 
 /** Muestra las pantallas del personal solo cuando ya se conocen los períodos (o un error con Reintentar). */
 export function ProcesoGate({ children }) {

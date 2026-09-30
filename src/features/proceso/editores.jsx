@@ -24,53 +24,87 @@ export const sesionesIniciales = (s) =>
     hora_fin: x.hora_fin
   }))
 
-/** Editor de sesiones semanales (día + hora de inicio y fin). */
-export function SesionesEditor({ value, onChange }) {
-  const set = (i, k, v) => onChange(value.map((s, j) => (j === i ? { ...s, [k]: k === 'dia' ? Number(v) : v } : s)))
+// Hora académica UNFV = 50 min. Bloques fijos desde las 08:00 (igual que el servidor).
+export const BLOQUES = Array.from({ length: 18 }, (_, i) => {
+  const m = 480 + 50 * i
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+})
+const aMin = (h) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3))
+export const bloquesDe = (sesiones) => sesiones.reduce((a, s) => a + Math.max(0, (aMin(s.hora_fin) - aMin(s.hora_inicio)) / 50), 0)
+export const horasPlan = (curso) => (curso ? Number(curso.ht || 0) + Number(curso.hp || 0) : 0)
+
+function HoraSelect({ value, opciones, onChange, label }) {
+  const fuera = value && !BLOQUES.includes(value)
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label} className={fuera ? 'invalida' : ''}>
+      {fuera && (
+        <option value={value} disabled>
+          {value} (fuera de bloque)
+        </option>
+      )}
+      {opciones.map((h) => (
+        <option key={h} value={h}>
+          {h}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+/** Propuesta inicial para una sección nueva: las horas del plan en uno o dos días (lunes y miércoles). */
+export function sesionesPorPlan(horas) {
+  const h = Math.max(2, horas || 2)
+  const partes = h <= 3 ? [h] : [Math.ceil(h / 2), Math.floor(h / 2)]
+  return partes.map((n, i) => ({ dia: i === 0 ? 1 : 3, hora_inicio: '08:00', hora_fin: BLOQUES[Math.min(n, BLOQUES.length - 1)] }))
+}
+
+/** Editor de sesiones semanales: día y horas en bloques fijos de 50 min; muestra las horas frente al plan. */
+export function SesionesEditor({ value, onChange, horas = 0 }) {
+  const set = (i, cambios) => onChange(value.map((s, j) => (j === i ? { ...s, ...cambios } : s)))
+  const cambiarInicio = (i, ini) => {
+    const s = value[i]
+    const dur = Math.max(2, Math.round((aMin(s.hora_fin) - aMin(s.hora_inicio)) / 50) || 2)
+    const idx = BLOQUES.indexOf(ini)
+    set(i, { hora_inicio: ini, hora_fin: BLOQUES[Math.min(idx + dur, BLOQUES.length - 1)] })
+  }
+  const total = bloquesDe(value)
   return (
     <div className="sesiones-editor">
       {value.map((s, i) => (
         <div className="sesion-row" key={i}>
-          <select value={s.dia} onChange={(e) => set(i, 'dia', e.target.value)} aria-label="Día">
+          <select value={s.dia} onChange={(e) => set(i, { dia: Number(e.target.value) })} aria-label="Día">
             {[1, 2, 3, 4, 5, 6].map((d) => (
               <option key={d} value={d}>
                 {DIAS_LARGOS[d]}
               </option>
             ))}
           </select>
-          <input
-            type="time"
-            min="07:00"
-            max="22:30"
-            step="600"
-            value={s.hora_inicio}
-            onChange={(e) => set(i, 'hora_inicio', e.target.value)}
-            aria-label="Inicio"
-          />
+          <HoraSelect value={s.hora_inicio} opciones={BLOQUES.slice(0, -1)} onChange={(v) => cambiarInicio(i, v)} label="Inicio" />
           <span>a</span>
-          <input type="time" min="07:00" max="22:30" step="600" value={s.hora_fin} onChange={(e) => set(i, 'hora_fin', e.target.value)} aria-label="Fin" />
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={() => onChange(value.filter((_, j) => j !== i))}
-            disabled={value.length === 1}
-            aria-label="Quitar día"
-          >
+          <HoraSelect value={s.hora_fin} opciones={BLOQUES.filter((h) => h > s.hora_inicio)} onChange={(v) => set(i, { hora_fin: v })} label="Fin" />
+          <button type="button" className="icon-btn" onClick={() => onChange(value.filter((_, j) => j !== i))} disabled={value.length === 1} aria-label="Quitar día">
             <Trash2 size={16} />
           </button>
         </div>
       ))}
-      {value.length < 4 && (
-        <button type="button" className="btn-secondary btn-sm" onClick={() => onChange([...value, { dia: 3, hora_inicio: '08:00', hora_fin: '09:40' }])}>
-          <Plus size={14} /> Agregar día
-        </button>
-      )}
+      <div className="sesiones-pie">
+        {value.length < 4 && (
+          <button type="button" className="btn-secondary btn-sm" onClick={() => onChange([...value, { dia: 3, hora_inicio: '08:00', hora_fin: '09:40' }])}>
+            <Plus size={14} /> Agregar día
+          </button>
+        )}
+        {horas > 0 && (
+          <span className={`horas-plan ${total >= horas ? 'ok' : 'falta'}`}>
+            {total} de {horas} horas semanales del plan{total < horas ? ` · faltan ${horas - total}` : total > horas ? ` · ${total - horas} extra` : ''}
+          </span>
+        )}
+      </div>
     </div>
   )
 }
 
-export function PropuestaEditor({ tipo, value, onChange, docentes = [], aulas = [] }) {
-  if (tipo === 'horario') return <SesionesEditor value={value.sesiones} onChange={(sesiones) => onChange({ ...value, sesiones })} />
+export function PropuestaEditor({ tipo, value, onChange, docentes = [], aulas = [], horas = 0 }) {
+  if (tipo === 'horario') return <SesionesEditor value={value.sesiones} onChange={(sesiones) => onChange({ ...value, sesiones })} horas={horas} />
   if (tipo === 'docente')
     return (
       <select className="select-input" value={value.id_docente || ''} onChange={(e) => onChange({ ...value, id_docente: Number(e.target.value) })}>
@@ -183,7 +217,7 @@ export function SolicitudModal({ rol, idPeriodo, seccion, docentes, aulas, onClo
         {conPropuesta && (
           <div className="field">
             Cambio propuesto
-            <PropuestaEditor tipo={tipo} value={propuesta} onChange={setPropuesta} docentes={docentes} aulas={aulas} />
+            <PropuestaEditor tipo={tipo} value={propuesta} onChange={setPropuesta} docentes={docentes} aulas={aulas} horas={horasPlan(seccion.curso)} />
           </div>
         )}
         <p className="muted small">La solicitud llegará a: {ROL_NOMBRE[destino]}. El cambio se aplica solo cuando lo acepte.</p>

@@ -8,7 +8,6 @@ import {
   MessageSquareWarning,
   Pencil,
   Plus,
-  Rocket,
   Search,
   Send,
   Trash2,
@@ -19,7 +18,7 @@ import { procesoApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
 import Modal from '../../components/Modal'
 import { colorCurso, horarioCorto, romano, TURNOS } from '../../utils/academico'
-import { AulaSelect, SesionesEditor, sesionesIniciales, SolicitudModal } from './editores'
+import { AulaSelect, bloquesDe, horasPlan, sesionesPorPlan, SesionesEditor, sesionesIniciales, SolicitudModal } from './editores'
 import { useProceso } from './ProcesoContext'
 
 const TITULOS = {
@@ -40,7 +39,7 @@ function SeccionModal({ idPeriodo, curso, seccion, onClose, onSaved }) {
   const [letra, setLetra] = useState(seccion?.cod_seccion || ['A', 'B', 'C', 'D', 'E'].find((l) => !usadas.includes(l)) || 'A')
   const [turno, setTurno] = useState(seccion?.turno || 'M')
   const [cupo, setCupo] = useState(seccion?.cupo_maximo || 30)
-  const [sesiones, setSesiones] = useState(sesionesIniciales(seccion))
+  const [sesiones, setSesiones] = useState(seccion ? sesionesIniciales(seccion) : sesionesPorPlan(horasPlan(curso)))
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -73,7 +72,7 @@ function SeccionModal({ idPeriodo, curso, seccion, onClose, onSaved }) {
           <button type="button" className="btn-secondary" onClick={onClose}>
             Cancelar
           </button>
-          <button type="button" className="btn-primary" onClick={guardar} disabled={saving}>
+          <button type="button" className="btn-primary" onClick={guardar} disabled={saving || bloquesDe(sesiones) < horasPlan(curso)}>
             {saving ? 'Guardando…' : 'Guardar sección'}
           </button>
         </>
@@ -107,8 +106,11 @@ function SeccionModal({ idPeriodo, curso, seccion, onClose, onSaved }) {
         </label>
         <div className="field full">
           Días y horas de clase
-          <SesionesEditor value={sesiones} onChange={setSesiones} />
-          <small className="field-hint">Las secciones con la misma letra de un ciclo (A, B o C) no deben cruzarse entre cursos.</small>
+          <SesionesEditor value={sesiones} onChange={setSesiones} horas={horasPlan(curso)} />
+          <small className="field-hint">
+            Bloques de 50 min desde las 08:00. Según el plan, {curso.nombre_curso} tiene {curso.ht} h de teoría y {curso.hp} h de práctica por semana (mínimo{' '}
+            {horasPlan(curso)} bloques). Las secciones con la misma letra de un ciclo no deben cruzarse entre cursos.
+          </small>
         </div>
         {error && <p className="form-error full">{error}</p>}
       </div>
@@ -313,8 +315,6 @@ export default function Programacion({ user }) {
     botones.push(['confirmar', 'Confirmar horarios y docentes', CheckCircle2, 'Confirmas que los horarios y los docentes asignados son correctos.'])
   if (rol === 'asistente' && fase === 3)
     botones.push(['enviar_docentes', 'Publicar para los docentes', Send, 'Cada docente verá su horario y deberá confirmarlo o reportar un problema.'])
-  if (rol === 'director' && fase === 4)
-    botones.push(['establecer', 'Establecer horarios y abrir matrícula', Rocket, 'Los horarios quedan establecidos y los alumnos podrán matricularse.'])
   if (rol === 'director' && fase === 5)
     botones.push(['iniciar_ajustes', 'Iniciar período de ajustes', Wrench, 'Comienzan las clases: se permiten ajustes de horario por 2 semanas.'])
   if (rol === 'director' && (fase === 5 || fase === 6))
@@ -328,7 +328,7 @@ export default function Programacion({ user }) {
         : fase === 3 && rol === 'asistente' && !(p.confirmado_jefe && p.confirmado_director)
           ? `Puedes asignar aulas. Para publicar falta la confirmación de: ${[!p.confirmado_jefe && 'Jefe', !p.confirmado_director && 'Director'].filter(Boolean).join(' y ')}.`
           : fase === 4
-            ? `Docentes: ${cnt.docentes_confirmados} secciones confirmadas, ${cnt.docentes_pendientes} por confirmar, ${cnt.docentes_observados} observadas.`
+            ? `Docentes: ${cnt.docentes_confirmados} secciones confirmadas, ${cnt.docentes_pendientes} por confirmar, ${cnt.docentes_observados} observadas. Cuando todos confirmen, los horarios quedan establecidos y la matrícula se abre sola.`
             : null
 
   // Solo períodos del mismo tipo de semestre (-1 ciclos impares, -2 ciclos pares), más recientes primero

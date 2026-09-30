@@ -5,7 +5,7 @@ import { Empty, ErrorState, Loading } from '../../components/AsyncState'
 import Timetable from '../../components/Timetable'
 import { colorCurso, DIAS_LARGOS, romano, sesionesDe, TURNOS } from '../../utils/academico'
 import { SolicitudModal } from './editores'
-import { useProceso } from './ProcesoContext'
+import { PeriodoSelect, usePeriodoConsulta, useProceso } from './ProcesoContext'
 
 const ESTADO = {
   pendiente: ['Por confirmar', 'pill-warn'],
@@ -14,7 +14,9 @@ const ESTADO = {
 }
 
 export default function DocenteHorario({ user }) {
-  const { periodoId, recargar } = useProceso()
+  const { recargar } = useProceso()
+  // Primero el período donde debe confirmar (fase 4); si no, el semestre en curso
+  const { periodoId, opciones, elegir, cargado } = usePeriodoConsulta({ minFase: 4, preferir: [4, 5, 6, 7] })
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [reportando, setReportando] = useState(null)
@@ -38,10 +40,12 @@ export default function DocenteHorario({ user }) {
   const confirmar = async (s) => {
     setMsg(null)
     try {
-      await docenteApi.confirmar(s.id_seccion)
+      const res = await docenteApi.confirmar(s.id_seccion)
       setMsg({
         ok: true,
-        text: `Confirmaste ${s.curso?.nombre_curso} (${s.cod_seccion}).`
+        text: res.matricula_abierta
+          ? `Confirmaste ${s.curso?.nombre_curso} (${s.cod_seccion}). Todos los horarios están confirmados: se abrió la matrícula de los alumnos.`
+          : `Confirmaste ${s.curso?.nombre_curso} (${s.cod_seccion}).`
       })
       await Promise.all([cargar(), recargar()])
     } catch (err) {
@@ -49,6 +53,13 @@ export default function DocenteHorario({ user }) {
     }
   }
 
+  if (cargado && !periodoId)
+    return (
+      <Empty>
+        <CalendarClock size={36} />
+        <span>Tu horario aparecerá cuando la escuela termine de programar los horarios y asignar aulas (fase 4).</span>
+      </Empty>
+    )
   if (error) return <ErrorState error={error} retry={cargar} />
   if (!data) return <Loading />
   const p = data.proceso
@@ -76,6 +87,7 @@ export default function DocenteHorario({ user }) {
             {user.nombres} {user.apellidos} · {secciones.length} secciones · {horas.toFixed(1)} horas semanales
           </p>
         </div>
+        <PeriodoSelect periodoId={periodoId} opciones={opciones} onChange={elegir} />
       </div>
 
       {!data.publicado ? (

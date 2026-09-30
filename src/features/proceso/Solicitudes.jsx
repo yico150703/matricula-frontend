@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { procesoApi } from '../../api/client'
 import { Empty, ErrorState, Loading } from '../../components/AsyncState'
 import { DIAS, horarioCorto } from '../../utils/academico'
-import { PropuestaEditor, ROL_NOMBRE, sesionesIniciales, TIPOS } from './editores'
+import { horasPlan, PropuestaEditor, ROL_NOMBRE, sesionesIniciales, TIPOS } from './editores'
 import { useProceso } from './ProcesoContext'
 
 const ESTADO = {
@@ -125,7 +125,7 @@ function Tarjeta({ sol, user, docentes, aulas, onChange }) {
                 <input type="checkbox" checked={modificar} onChange={(e) => setModificar(e.target.checked)} />
                 {sol.propuesta ? 'Aprobar con otra alternativa' : 'Definir el cambio que se aplicará'}
               </label>
-              {modificar && <PropuestaEditor tipo={sol.tipo} value={propuesta} onChange={setPropuesta} docentes={docentes} aulas={aulas} />}
+              {modificar && <PropuestaEditor tipo={sol.tipo} value={propuesta} onChange={setPropuesta} docentes={docentes} aulas={aulas} horas={horasPlan(sol.seccion?.curso)} />}
               <textarea rows={2} value={respuesta} onChange={(e) => setRespuesta(e.target.value)} placeholder="Respuesta (obligatoria si rechazas)" />
               <div className="form-actions">
                 <button type="button" className="btn-secondary" disabled={busy} onClick={() => resolver('rechazar')}>

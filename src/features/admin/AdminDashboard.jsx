@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { CalendarPlus, KeyRound, Link2, RotateCcw, ShieldCheck, Target, Trash2, User, UserPlus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { adminApi } from '../../api/client'
+import { errorInicioPrimero, fechaLarga, finDeClases, inicioSegundo, rangoInicioPrimero } from '../../utils/calendario'
 import { ErrorState, Loading } from '../../components/AsyncState'
 
 export default function AdminDashboard() {
@@ -35,15 +36,37 @@ export default function AdminDashboard() {
   }
   useEffect(load, [load])
 
-  // La matrícula ya no se abre a mano: la abre el proceso de horarios al llegar a la fase 5
-  const [nuevoPeriodo, setNuevoPeriodo] = useState({ cod_per_acad: '', fecha_inicio: '', fecha_fin: '' })
+  // La matrícula no se abre a mano: la abre el proceso de horarios cuando todos los docentes confirman
+  const [nuevoPeriodo, setNuevoPeriodo] = useState({ cod_per_acad: '', fecha_inicio: '' })
+  const cod = nuevoPeriodo.cod_per_acad.trim()
+  const codValido = /^20\d{2}-[12]$/.test(cod)
+  const anio = codValido ? Number(cod.slice(0, 4)) : null
+  const esSegundo = codValido && cod.endsWith('-2')
+  const primero = esSegundo ? data?.periodos.find((p) => p.cod_per_acad === `${anio}-1`) : null
+  const inicio = esSegundo ? (primero ? inicioSegundo(primero.fecha_inicio) : '') : nuevoPeriodo.fecha_inicio
+  const errorFecha = !codValido ? '' : esSegundo ? (primero ? '' : `Primero crea el período ${anio}-1.`) : nuevoPeriodo.fecha_inicio ? errorInicioPrimero(nuevoPeriodo.fecha_inicio, anio) : ''
+  const fin = inicio && !errorFecha ? finDeClases(inicio) : ''
+
   const crearPeriodo = async (e) => {
     e.preventDefault()
     setMsg(null)
     try {
-      await adminApi.crearPeriodo(nuevoPeriodo)
-      setMsg({ ok: true, text: `Período ${nuevoPeriodo.cod_per_acad} creado: el Jefe de Departamento ya puede iniciar la fase 1.` })
-      setNuevoPeriodo({ cod_per_acad: '', fecha_inicio: '', fecha_fin: '' })
+      await adminApi.crearPeriodo(esSegundo ? { cod_per_acad: cod } : { cod_per_acad: cod, fecha_inicio: nuevoPeriodo.fecha_inicio })
+      setMsg({ ok: true, text: `Período ${cod} creado (${fechaLarga(inicio)} al ${fechaLarga(fin)}): el Jefe de Departamento ya puede iniciar la fase 1.` })
+      setNuevoPeriodo({ cod_per_acad: '', fecha_inicio: '' })
+      load()
+    } catch (err) {
+      setMsg({ ok: false, text: err.detail })
+    }
+  }
+
+  const [borrando, setBorrando] = useState(null)
+  const borrarPeriodo = async (p) => {
+    setMsg(null)
+    try {
+      const res = await adminApi.borrarPeriodo(p.id_periodo)
+      setMsg({ ok: true, text: res.message })
+      setBorrando(null)
       load()
     } catch (err) {
       setMsg({ ok: false, text: err.detail })
@@ -65,8 +88,8 @@ export default function AdminDashboard() {
           <Link className="btn-primary" to="/admin/alumnos">
             <UserPlus size={16} /> Registrar alumno
           </Link>
-          <Link className="btn-secondary" to="/admin/notas">
-            <Target size={16} /> Asignar notas
+          <Link className="btn-secondary" to="/admin/actas">
+            <Target size={16} /> Seguimiento de notas
           </Link>
         </div>
       </div>
@@ -148,8 +171,8 @@ export default function AdminDashboard() {
       <article className="panel-card">
         <h3>Períodos académicos</h3>
         <p className="muted small">
-          La matrícula se abre sola cuando el proceso de horarios llega a la fase 5 (lo decide el Director de Escuela) y se cierra en la fase 7. Aquí solo se
-          crean los períodos.
+          Cada período tiene 16 semanas de clases, luego 1 semana de vacaciones; el período 2 empieza el lunes siguiente. El período 1 empieza un lunes de
+          marzo, abril o mayo. La matrícula se abre sola cuando todos los docentes confirman sus horarios (fase 5).
         </p>
         <form className="form-grid form-grid-4 periodo-form" onSubmit={crearPeriodo}>
           <label className="field">
@@ -157,25 +180,44 @@ export default function AdminDashboard() {
             <input
               value={nuevoPeriodo.cod_per_acad}
               onChange={(e) => setNuevoPeriodo({ ...nuevoPeriodo, cod_per_acad: e.target.value })}
-              placeholder="2027-2"
+              placeholder="2027-1"
               required
               pattern="20[0-9]{2}-[12]"
+              title="Formato AAAA-1 o AAAA-2"
             />
           </label>
           <label className="field">
-            Inicio de clases
-            <input type="date" value={nuevoPeriodo.fecha_inicio} onChange={(e) => setNuevoPeriodo({ ...nuevoPeriodo, fecha_inicio: e.target.value })} required />
+            Inicio de clases (lunes)
+            {esSegundo ? (
+              <input type="date" value={inicio} disabled title="Se calcula a partir del período 1" />
+            ) : (
+              <input
+                type="date"
+                value={nuevoPeriodo.fecha_inicio}
+                min={anio ? rangoInicioPrimero(anio).min : undefined}
+                max={anio ? rangoInicioPrimero(anio).max : undefined}
+                onChange={(e) => setNuevoPeriodo({ ...nuevoPeriodo, fecha_inicio: e.target.value })}
+                required
+              />
+            )}
           </label>
           <label className="field">
-            Fin de clases
-            <input type="date" value={nuevoPeriodo.fecha_fin} onChange={(e) => setNuevoPeriodo({ ...nuevoPeriodo, fecha_fin: e.target.value })} required />
+            Fin de clases (automático)
+            <input type="date" value={fin} disabled />
           </label>
           <div className="form-actions" style={{ alignSelf: 'end' }}>
-            <button className="btn-primary">
+            <button className="btn-primary" disabled={!codValido || !inicio || Boolean(errorFecha)}>
               <CalendarPlus size={15} /> Crear período
             </button>
           </div>
         </form>
+        {errorFecha && <p className="form-error">{errorFecha}</p>}
+        {fin && !errorFecha && (
+          <p className="form-notice calendario-preview">
+            Clases del {fechaLarga(inicio)} al {fechaLarga(fin)} (16 semanas).
+            {!esSegundo && <> Vacaciones la semana siguiente; el período {anio}-2 empezaría el {fechaLarga(inicioSegundo(inicio))}.</>}
+          </p>
+        )}
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -186,6 +228,7 @@ export default function AdminDashboard() {
                 <th>Matrículas</th>
                 <th>Cursos inscritos</th>
                 <th>Proceso de horarios</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -202,6 +245,23 @@ export default function AdminDashboard() {
                     <span className={`pill ${p.fase === 5 || p.fase === 6 ? 'pill-ok' : p.fase === 7 ? 'pill-muted' : 'pill-info'}`}>
                       {p.fase >= 7 ? 'Cerrado' : p.fase >= 5 ? `Fase ${p.fase} · matrícula abierta` : `Fase ${p.fase} · en programación`}
                     </span>
+                  </td>
+                  <td className="right">
+                    {p.eliminable &&
+                      (borrando === p.id_periodo ? (
+                        <span className="actions-cell">
+                          <button type="button" className="btn-danger btn-sm" onClick={() => borrarPeriodo(p)}>
+                            Confirmar
+                          </button>
+                          <button type="button" className="btn-secondary btn-sm" onClick={() => setBorrando(null)}>
+                            No
+                          </button>
+                        </span>
+                      ) : (
+                        <button type="button" className="btn-secondary btn-sm" onClick={() => setBorrando(p.id_periodo)} title="Solo períodos en programación sin matrículas">
+                          <Trash2 size={14} /> Eliminar
+                        </button>
+                      ))}
                   </td>
                 </tr>
               ))}
@@ -232,7 +292,7 @@ export default function AdminDashboard() {
               <li>Registrar alumnos (correo y contraseña se generan solos)</li>
               <li>Editar datos, plan y estado de los alumnos</li>
               <li>Atender solicitudes de recuperación de contraseña</li>
-              <li>Registrar notas N1, N2, N3, sustitutorio y aplazado</li>
+              <li>Supervisar las actas de notas (las registra el docente y las aprueba el Director) y registrar notas históricas</li>
               <li>Crear cuentas del personal y asignar roles</li>
               <li>Crear períodos académicos</li>
             </ul>

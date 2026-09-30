@@ -1,10 +1,10 @@
 import { CheckCircle2, Eye, FileText, RotateCcw, XCircle } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { notasApi, procesoApi } from '../../api/client'
+import { notasApi } from '../../api/client'
 import { Empty, ErrorState, Loading } from '../../components/AsyncState'
 import Modal from '../../components/Modal'
 import { formatoNota, formatoParcial, romano, TURNOS } from '../../utils/academico'
-import { useProceso } from '../proceso/ProcesoContext'
+import { PeriodoSelect, usePeriodoConsulta } from '../proceso/ProcesoContext'
 import { abrirPdfActa, CAMPOS_NOTA, EstadoActa } from './comun'
 
 const PESTANAS = [
@@ -16,28 +16,8 @@ const PESTANAS = [
 ]
 const fecha = (iso) => (iso ? new Date(iso).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' }) : '—')
 
-/** Período: el de la barra de fases (Director) o un selector propio (administrador). */
-function usePeriodo() {
-  const ctx = useProceso()
-  const [propios, setPropios] = useState(null)
-  const [elegido, setElegido] = useState(null)
-  useEffect(() => {
-    if (ctx) return
-    procesoApi
-      .periodos()
-      .then((r) => {
-        const lista = r.procesos.filter((p) => p.fase >= 5)
-        setPropios(lista)
-        setElegido(lista.find((p) => p.fase <= 6)?.id_periodo ?? lista[0]?.id_periodo ?? null)
-      })
-      .catch(() => setPropios([]))
-  }, [ctx])
-  if (ctx) return { periodoId: ctx.periodoId, opciones: null, elegir: null }
-  return { periodoId: elegido, opciones: propios, elegir: setElegido }
-}
-
 export default function ActasRevision({ soloLectura = false }) {
-  const { periodoId, opciones, elegir } = usePeriodo()
+  const { periodoId, opciones, elegir, cargado } = usePeriodoConsulta()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [tab, setTab] = useState(soloLectura ? 'todas' : 'enviada')
@@ -58,7 +38,8 @@ export default function ActasRevision({ soloLectura = false }) {
     cargar()
   }, [cargar])
 
-  if (opciones && opciones.length === 0) return <Empty>Aún no hay períodos con horarios establecidos.</Empty>
+  if (cargado && opciones.length === 0) return <Empty>Aún no hay períodos con horarios establecidos.</Empty>
+  if (!cargado) return <Loading />
   if (error) return <ErrorState error={error} retry={cargar} />
   if (!data) return <Loading />
 
@@ -83,15 +64,7 @@ export default function ActasRevision({ soloLectura = false }) {
           </p>
         </div>
         <div className="toolbar">
-          {opciones && (
-            <select className="select-input" value={periodoId ?? ''} onChange={(e) => elegir(Number(e.target.value))} aria-label="Período">
-              {opciones.map((p) => (
-                <option key={p.id_periodo} value={p.id_periodo}>
-                  Período {p.periodo.cod_per_acad}
-                </option>
-              ))}
-            </select>
-          )}
+          <PeriodoSelect periodoId={periodoId} opciones={opciones} onChange={elegir} />
           <div className="hero-stats">
             <span className={r.enviada ? 'warn' : ''}>
               <b>{r.enviada}</b> por revisar

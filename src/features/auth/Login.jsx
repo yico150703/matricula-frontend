@@ -10,7 +10,7 @@ const CUENTAS_PRUEBA = [
   { rol: 'Jefe de Departamento', usuario: 'jefedepartamentoescuelasistemas@unfv.edu.pe', clave: 'Jefe2026!', icon: CalendarRange },
   { rol: 'Director de Escuela', usuario: 'directorescuelasistemas@unfv.edu.pe', clave: 'Director2026!', icon: UserCheck },
   { rol: 'Asistente de Escuela', usuario: 'asistenteescuelasistemas@unfv.edu.pe', clave: 'Asistente2026!', icon: Building2 },
-  { rol: 'Docente', usuario: 'jalvaradotorres@unfv.pe', clave: 'Docente2026!', icon: Users },
+  { rol: 'Docente', usuario: 'jalvaradot@unfv.edu.pe', clave: 'Docente2026!', icon: Users },
   { rol: 'Alumno', usuario: '20260001', clave: '20260001', icon: GraduationCap }
 ]
 
@@ -94,7 +94,7 @@ export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
             value={usuario}
             onChange={(e) => setUsuario(e.target.value)}
             autoComplete="username"
-            placeholder="Ej. 2024035025 o nombre@unfv.pe"
+            placeholder="Ej. 2024035025 o nombre@unfv.edu.pe"
             autoFocus
           />
         </label>
