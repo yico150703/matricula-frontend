@@ -227,6 +227,8 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
     setBusy(true)
     try {
       setCarrito(await carritoApi.vaciar(alumno.cod_alumno, periodo.id_periodo))
+    } catch (err) {
+      setMsg({ ok: false, text: err.detail })
     } finally {
       setBusy(false)
     }
@@ -439,7 +441,7 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
                             <td className="small">{horarioCorto(d.seccion)}</td>
                             <td className="small">{d.seccion.docente}</td>
                             <td className="right">
-                              {d.nota_final !== null ? (
+                              {[d.nota_final, d.n1, d.n2, d.n3].some((v) => v !== null && v !== undefined) ? (
                                 <span className="small muted">Con nota</span>
                               ) : confirmRetiro === d.id ? (
                                 <span className="actions-cell">

@@ -30,7 +30,11 @@ class ErrorBoundary extends React.Component {
               <button
                 className="btn-primary"
                 onClick={() => {
-                  localStorage.removeItem('matricula_token')
+                  try {
+                    localStorage.removeItem('matricula_token')
+                  } catch {
+                    /* almacenamiento bloqueado */
+                  }
                   window.location.href = '/login'
                 }}
                 style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem', cursor: 'pointer' }}

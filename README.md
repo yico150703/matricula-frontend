@@ -3,15 +3,17 @@
 SPA React + Vite con seis roles; cada uno ve solo las pantallas de su función. El código está organizado por funcionalidades en `src/features` y todo acceso HTTP pasa por `src/api/client.js`.
 
 - **Alumno** (`/matricula`, `/malla`, `/horario`, `/historial`, `/configuracion`): arma su matrícula por secciones A/B/C con un carrito (reserva de 10 minutos, cursos de su ciclo y de otros ciclos que repite), retira cursos, ve su horario semanal a colores, su historial con N1-N3 y descarga la ficha de matrícula y la boleta de notas en el formato UNFV.
-- **Administrador** (`/admin`, `/admin/alumnos`, `/admin/notas`, `/configuracion`): registra alumnos con solo código, nombres, apellidos y plan (el correo `código@unfv.edu.pe` y la contraseña inicial = código se generan solos), edita, desactiva, restablece contraseñas y registra notas. En `/admin/personal` crea las cuentas del personal con nombres y apellidos y les asigna el rol; en el panel crea los períodos académicos.
+- **Administrador** (`/admin`, `/admin/alumnos`, `/admin/notas`, `/configuracion`): registra alumnos con solo código, nombres, apellidos y plan (el correo `código@unfv.edu.pe` y la contraseña inicial = código se generan solos), edita, desactiva y restablece contraseñas; registra solo notas históricas (`/admin/notas`) y supervisa las actas de notas (`/admin/actas`). En `/admin/personal` crea las cuentas del personal con nombres y apellidos y les asigna el rol; en el panel crea los períodos académicos.
 - **Jefe de Departamento** (`/programacion`, `/solicitudes`): fase 1, crea los horarios de cada curso (puede copiar un período anterior como base).
-- **Director de Escuela** (`/programacion`, `/solicitudes`): fase 2, asigna los docentes; establece los horarios, abre y cierra la matrícula.
+- **Director de Escuela** (`/programacion`, `/solicitudes`, `/actas`): fase 2, asigna los docentes; establece los horarios, abre y cierra la matrícula; aprueba u observa las actas de notas.
 - **Asistente de Escuela** (`/programacion`, `/solicitudes`): fase 3, asigna pabellón, aula o laboratorio (a la sección o a cada sesión).
-- **Docente** (`/docente`, `/solicitudes`): fase 4, ve su horario semanal, confirma cada sección o reporta un problema.
+- **Docente** (`/docente`, `/docente/salones`, `/solicitudes`): fase 4, ve su horario semanal, confirma cada sección o reporta un problema. Desde la fase 5 registra las notas de cada salón, descarga el acta para firmar, sube el PDF firmado y lo envía al Director.
 
 Jefe, director, asistente y docentes ven arriba una **barra de fases animada** con el período, la fase actual (se va pintando) y sus pendientes. Los cambios fuera de la fase de cada rol se piden en **Solicitudes de cambio**, con un hilo de mensajes, y se aplican solo cuando el rol responsable los acepta. Los alumnos solo pueden matricularse cuando el proceso llega a la fase 5.
 
-El inicio de sesión muestra arriba las **cuentas de prueba** de cada rol (toca una para completar usuario y contraseña).
+El inicio de sesión muestra arriba las **cuentas de prueba** de cada rol (toca una para completar usuario y contraseña). Son compartidas: su contraseña no se puede cambiar y el servidor la restablece en cada arranque.
+
+Si Render está dormido (plan gratuito), el cliente reintenta solo mientras el servidor despierta y el login avisa que el primer ingreso puede tardar hasta un minuto. Un fallo de red al recargar ya no cierra la sesión; cerrar sesión en una pestaña la cierra en las demás.
 
 Primer ingreso: el alumno entra con su código como usuario y contraseña, y el sistema le obliga a cambiarla. Si la olvida, usa "¿Olvidaste tu contraseña?" (`/recuperar`). La sesión se mantiene al recargar y se cierra tras 10 minutos de inactividad.
 

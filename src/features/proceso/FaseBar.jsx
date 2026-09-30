@@ -35,7 +35,7 @@ const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
 /** Barra superior con la fase del proceso: se va pintando conforme avanza. */
 export default function FaseBar() {
   const ctx = useProceso()
-  if (!ctx?.procesos) return <div className="fase-bar fase-bar-loading" />
+  if (!ctx?.procesos) return ctx?.error ? null : <div className="fase-bar fase-bar-loading" />
   const { procesos, proceso, elegir } = ctx
   if (!proceso) return null
   const cerrado = proceso.fase >= 7

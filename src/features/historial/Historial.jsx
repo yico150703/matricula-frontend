@@ -2,7 +2,7 @@ import { FileDown, GraduationCap } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { matriculaApi } from '../../api/client'
 import { Empty, ErrorState, Loading } from '../../components/AsyncState'
-import { formatoNota, redondear, TURNOS } from '../../utils/academico'
+import { formatoNota, formatoParcial, redondear, TURNOS } from '../../utils/academico'
 
 const statusLabels = {
   en_curso: 'En curso',
@@ -49,7 +49,7 @@ export default function Historial({ alumno }) {
           <p className="eyebrow">Trayectoria académica</p>
           <h1>Historial académico</h1>
           <p className="muted">
-            Notas registradas por la Oficina de Matrícula. Nota aprobatoria: {min}. Se redondea al entero: desde x.5 sube (10.5 = 11).
+            Notas registradas por tus docentes y aprobadas por la Dirección de Escuela. Nota aprobatoria: {min}. El promedio se redondea al entero: desde x.5 sube (10.5 = 11).
           </p>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function Historial({ alumno }) {
                           <td>{item.curso.creditos}</td>
                           {['n1', 'n2', 'n3', 'sustitutorio', 'promedio', 'aplazado'].map((k) => (
                             <td key={k} className="num">
-                              {item[k] === null || item[k] === undefined ? '' : formatoNota(item[k])}
+                              {item[k] === null || item[k] === undefined ? '' : formatoParcial(item[k])}
                             </td>
                           ))}
                           <td>{nf !== null ? <span className={`grade-badge ${nf >= min ? 'ok' : 'bad'}`}>{formatoNota(nf)}</span> : '—'}</td>

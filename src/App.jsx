@@ -4,7 +4,9 @@ import {
   Building2,
   CalendarDays,
   CalendarRange,
+  ClipboardCheck,
   ClipboardPen,
+  FileCheck2,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -18,8 +20,8 @@ import {
   Users,
   X
 } from 'lucide-react'
-import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import { SESSION_EXPIRED_EVENT, authApi, session } from './api/client'
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { PASSWORD_CHANGE_EVENT, SESSION_EXPIRED_EVENT, TOKEN_STORAGE_KEY, authApi, session } from './api/client'
 import TopBar from './components/TopBar'
 import useInactivityTimer from './components/useInactivityTimer'
 import AdminAlumnos from './features/admin/AdminAlumnos'
@@ -38,9 +40,12 @@ import Dashboard from './features/malla/Dashboard'
 import Matricula from './features/matricula/Matricula'
 import DocenteHorario from './features/proceso/DocenteHorario'
 import FaseBar from './features/proceso/FaseBar'
-import { ProcesoProvider } from './features/proceso/ProcesoContext'
+import { ProcesoGate, ProcesoProvider } from './features/proceso/ProcesoContext'
 import Programacion from './features/proceso/Programacion'
 import Solicitudes from './features/proceso/Solicitudes'
+import ActasRevision from './features/notas/ActasRevision'
+import MisSalones from './features/notas/MisSalones'
+import SalonNotas from './features/notas/SalonNotas'
 import { planPorId } from './utils/academico'
 
 // OWASP recomienda cerrar por inactividad entre 2-5 min (alto riesgo) y 15-30 min (bajo riesgo).
@@ -82,7 +87,8 @@ const NAV = {
     ['/admin', 'Panel de control', LayoutDashboard],
     ['/admin/personal', 'Personal y roles', ShieldCheck],
     ['/admin/alumnos', 'Gestión de alumnos', Users],
-    ['/admin/notas', 'Calificaciones', Target],
+    ['/admin/actas', 'Seguimiento de notas', ClipboardCheck],
+    ['/admin/notas', 'Notas históricas', Target],
     ['/configuracion', 'Configuración de cuenta', Settings]
   ],
   jefe: [
@@ -93,6 +99,7 @@ const NAV = {
   director: [
     ['/programacion', 'Asignación de docentes', UserCheck],
     ['/solicitudes', 'Solicitudes de cambio', MessagesSquare],
+    ['/actas', 'Actas de notas', FileCheck2],
     ['/configuracion', 'Configuración de cuenta', Settings]
   ],
   asistente: [
@@ -102,6 +109,7 @@ const NAV = {
   ],
   docente: [
     ['/docente', 'Mi horario docente', CalendarDays],
+    ['/docente/salones', 'Mis salones y notas', ClipboardPen],
     ['/solicitudes', 'Mis reportes', MessagesSquare],
     ['/configuracion', 'Configuración de cuenta', Settings]
   ]
@@ -117,6 +125,7 @@ function Rutas({ user, rol, onUserUpdated }) {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/personal" element={<AdminPersonal />} />
         <Route path="/admin/alumnos" element={<AdminAlumnos />} />
+        <Route path="/admin/actas" element={<ActasRevision soloLectura />} />
         <Route path="/admin/notas" element={<AdminNotas />} />
         {configuracion}
         {otra}
@@ -127,6 +136,8 @@ function Rutas({ user, rol, onUserUpdated }) {
     return (
       <Routes>
         <Route path="/docente" element={<DocenteHorario user={user} />} />
+        <Route path="/docente/salones" element={<MisSalones />} />
+        <Route path="/docente/salones/:idSeccion" element={<SalonNotas user={user} />} />
         <Route path="/solicitudes" element={<Solicitudes user={user} />} />
         {configuracion}
         {otra}
@@ -138,6 +149,7 @@ function Rutas({ user, rol, onUserUpdated }) {
       <Routes>
         <Route path="/programacion" element={<Programacion user={user} />} />
         <Route path="/solicitudes" element={<Solicitudes user={user} />} />
+        {rol === 'director' && <Route path="/actas" element={<ActasRevision />} />}
         {configuracion}
         {otra}
       </Routes>
@@ -161,13 +173,14 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
   const closeMenu = () => setMenuOpen(false)
   const isAdmin = rol === 'admin'
   const enProceso = ROLES_PROCESO.includes(rol)
+  const location = useLocation()
 
   const contenido = (
     <div className="unfv-app-layout">
       <TopBar user={user} rol={rol} onLogout={onLogout} onToggleMenu={() => setMenuOpen((v) => !v)} secondsLeft={secondsLeft} />
 
       {menuOpen && <div className="drawer-backdrop" onClick={closeMenu} />}
-      <aside className={`unfv-drawer ${menuOpen ? 'open' : ''}`} aria-hidden={!menuOpen}>
+      <aside className={`unfv-drawer ${menuOpen ? 'open' : ''}`} aria-hidden={!menuOpen} inert={!menuOpen}>
         <div className="drawer-header">
           <div className="drawer-brand">
             <GraduationCap size={26} className="drawer-brand-icon" />
@@ -184,7 +197,7 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
             <NavLink
               key={to}
               to={to}
-              end={to === '/admin'}
+              end={to === '/admin' || to === '/docente'}
               className={({ isActive }) => `drawer-nav-item ${isActive ? 'active' : ''}`}
               onClick={closeMenu}
             >
@@ -230,7 +243,13 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
 
       <main className="unfv-main-content">
         {enProceso && <FaseBar />}
-        <Rutas user={user} rol={rol} onUserUpdated={onUserUpdated} />
+        {enProceso && location.pathname !== '/configuracion' ? (
+          <ProcesoGate>
+            <Rutas user={user} rol={rol} onUserUpdated={onUserUpdated} />
+          </ProcesoGate>
+        ) : (
+          <Rutas user={user} rol={rol} onUserUpdated={onUserUpdated} />
+        )}
       </main>
 
       <DiagramaERModal isOpen={diagramaOpen} onClose={() => setDiagramaOpen(false)} />
@@ -238,7 +257,7 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
   )
 
   // El estado del proceso (período y fase) se comparte entre la barra de fases y las pantallas del personal
-  return enProceso ? <ProcesoProvider>{contenido}</ProcesoProvider> : contenido
+  return enProceso ? <ProcesoProvider rol={rol}>{contenido}</ProcesoProvider> : contenido
 }
 
 export default function App() {
@@ -246,35 +265,63 @@ export default function App() {
   const [checking, setChecking] = useState(true)
   const [diagramaOpen, setDiagramaOpen] = useState(false)
   const [notice, setNotice] = useState('')
+  const [errorSesion, setErrorSesion] = useState(null)
   const navigate = useNavigate()
 
   const logout = useCallback(
     (message = '') => {
       session.clear()
       setAuth(null)
+      setErrorSesion(null)
       setNotice(typeof message === 'string' ? message : '')
       navigate('/login', { replace: true })
     },
     [navigate]
   )
 
-  // Restaurar la sesión al recargar la página
-  useEffect(() => {
+  // Restaurar la sesión al recargar la página. Solo se borra el token si el servidor lo rechaza (401):
+  // un fallo de red o el arranque del servidor no deben cerrar la sesión.
+  const restaurar = useCallback(() => {
     if (!session.get()) {
       setChecking(false)
       return
     }
+    setChecking(true)
+    setErrorSesion(null)
     authApi
       .me()
       .then((res) => setAuth({ user: res.usuario || res.alumno, rol: res.rol || 'alumno' }))
-      .catch(() => session.clear())
+      .catch((err) => {
+        if (err.status === 401) session.clear()
+        else setErrorSesion(err)
+      })
       .finally(() => setChecking(false))
   }, [])
 
   useEffect(() => {
-    const onExpired = () => logout('Tu sesión expiró. Vuelve a iniciar sesión.')
+    restaurar()
+  }, [restaurar])
+
+  useEffect(() => {
+    const onExpired = (e) => logout(e.detail || 'Tu sesión expiró. Vuelve a iniciar sesión.')
+    // El servidor exige cambiar la contraseña inicial: se recarga el perfil para mostrar esa pantalla
+    const onCambio = () =>
+      authApi
+        .me()
+        .then((res) => setAuth((prev) => (prev ? { ...prev, user: res.usuario || res.alumno } : prev)))
+        .catch(() => {})
+    // Otra pestaña cerró la sesión (o venció por inactividad): esta pestaña también sale
+    const onStorage = (e) => {
+      if (e.key === TOKEN_STORAGE_KEY && !e.newValue) logout('Se cerró la sesión en otra pestaña.')
+    }
     window.addEventListener(SESSION_EXPIRED_EVENT, onExpired)
-    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired)
+    window.addEventListener(PASSWORD_CHANGE_EVENT, onCambio)
+    window.addEventListener('storage', onStorage)
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired)
+      window.removeEventListener(PASSWORD_CHANGE_EVENT, onCambio)
+      window.removeEventListener('storage', onStorage)
+    }
   }, [logout])
 
   const secondsLeft = useInactivityTimer(Boolean(auth), INACTIVIDAD_SEGUNDOS, () => logout('Se cerró la sesión por 10 minutos de inactividad.'))
@@ -289,6 +336,26 @@ export default function App() {
   const updateUser = (user) => setAuth((prev) => (prev ? { ...prev, user } : prev))
 
   if (checking) return <div className="centered">Comprobando sesión…</div>
+
+  if (!auth && errorSesion) {
+    return (
+      <div className="centered reconectando">
+        <p>
+          <strong>No pudimos conectar con el servidor.</strong>
+          <br />
+          {errorSesion.detail}
+        </p>
+        <div className="toolbar">
+          <button type="button" className="btn-primary" onClick={restaurar}>
+            Reintentar
+          </button>
+          <button type="button" className="btn-secondary" onClick={() => logout()}>
+            Ir al inicio de sesión
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!auth) {
     return (

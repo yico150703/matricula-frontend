@@ -39,6 +39,13 @@ export const horarioCorto = (s) =>
 
 /** Redondeo UNFV: desde x.5 sube (10.5 -> 11), si no se queda (10.2 -> 10). */
 export const redondear = (n) => (n === null || n === undefined || n === '' ? null : Math.floor(Number(n) + 0.5))
+/** Notas parciales (N1, N2, N3, sustitutorio, aplazado): se muestran tal cual se registraron (10.5). */
+export const formatoParcial = (n) => {
+  if (n === null || n === undefined || n === '') return '—'
+  const v = Number(n)
+  return Number.isInteger(v) ? String(v).padStart(2, '0') : String(Math.round(v * 100) / 100)
+}
+
 export const formatoNota = (n) => {
   const r = redondear(n)
   return r === null ? '—' : String(r).padStart(2, '0')

@@ -6,7 +6,7 @@ import AuthLayout from '../../components/AuthLayout'
 
 // Cuentas de prueba (las crea el script de base de datos). Se muestran al inicio del login.
 const CUENTAS_PRUEBA = [
-  { rol: 'Administrador del sistema', usuario: 'admin', clave: 'Admin2026!', icon: ShieldCheck },
+  { rol: 'Administrador del sistema', usuario: 'adminprueba', clave: 'Admin2026!', icon: ShieldCheck },
   { rol: 'Jefe de Departamento', usuario: 'jefedepartamentoescuelasistemas@unfv.edu.pe', clave: 'Jefe2026!', icon: CalendarRange },
   { rol: 'Director de Escuela', usuario: 'directorescuelasistemas@unfv.edu.pe', clave: 'Director2026!', icon: UserCheck },
   { rol: 'Asistente de Escuela', usuario: 'asistenteescuelasistemas@unfv.edu.pe', clave: 'Asistente2026!', icon: Building2 },
@@ -40,7 +40,8 @@ function CuentasPrueba({ onUsar }) {
         ))}
       </ul>
       <p className="demo-accounts-note">
-        El admin y los alumnos deben cambiar su contraseña al primer ingreso; si alguien ya la cambió, el administrador puede restablecerla.
+        Son cuentas compartidas: su contraseña no se puede cambiar, así todos pueden entrar. Las cuentas reales piden cambiar la contraseña al primer
+        ingreso.
       </p>
     </div>
   )
@@ -52,17 +53,22 @@ export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
+  const [lento, setLento] = useState(false)
 
   async function submit(event) {
     event.preventDefault()
     setError('')
     setSending(true)
+    // El servidor gratuito se duerme sin uso: el primer ingreso puede tardar hasta un minuto
+    const aviso = setTimeout(() => setLento(true), 4000)
     try {
       const result = await authApi.login(usuario.trim(), password)
       onLoggedIn(result.usuario || result.alumno, result.rol || 'alumno', result.access_token)
     } catch (err) {
       setError(err.detail || 'No fue posible iniciar sesión.')
     } finally {
+      clearTimeout(aviso)
+      setLento(false)
       setSending(false)
     }
   }
@@ -114,6 +120,11 @@ export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
           </div>
         </label>
         {error && <p className="form-error">{error}</p>}
+        {lento && (
+          <p className="form-notice" role="status">
+            Activando el servidor… el primer ingreso del día puede tardar hasta un minuto. No cierres la página.
+          </p>
+        )}
         <button type="submit" disabled={sending} className="btn-primary btn-block">
           <LogIn size={18} /> {sending ? 'Ingresando…' : 'Ingresar'}
         </button>

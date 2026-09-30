@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { DIAS, formatoNota, redondear, sesionesDe } from './academico'
+import { DIAS, formatoNota, formatoParcial, redondear, sesionesDe } from './academico'
 
 const pad2 = (n) => String(n).padStart(2, '0')
 
@@ -274,3 +274,94 @@ export function descargarBoletaNotasPDF({ alumno, periodo, filas, nivel, notaMin
   doc.save(nombreArchivo('Boleta_Notas', alumno, periodo))
 }
 
+
+/** Acta de notas de un salón (para que el docente la imprima, firme y suba escaneada). */
+export function descargarActaNotasPDF({ seccion, periodo, alumnos, docente, notaMinima = 11 }) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const { fecha, hora } = fechaHora()
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11.5)
+  doc.text('UNIVERSIDAD NACIONAL FEDERICO VILLARREAL', 12, 13)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text('FACULTAD DE INGENIERIA INDUSTRIAL Y DE SISTEMAS · E.P. DE INGENIERIA DE SISTEMAS', 12, 16.5)
+  doc.setFontSize(8.5)
+  doc.text(`Fecha :  ${fecha}`, 160, 12)
+  doc.text(`Hora  :  ${hora}`, 160, 16)
+  doc.setFontSize(15)
+  doc.text(`ACTA DE NOTAS  ${periodo?.cod_per_acad || ''}`, 105, 25, { align: 'center' })
+
+  doc.setFontSize(9)
+  const c = seccion.curso
+  const datos = [
+    ['Asignatura', `${c.codigo_curso || c.cod_curso} · ${c.nombre_curso}`],
+    ['Ciclo / Sección', `${pad2(c.ciclo)} · Sección ${seccion.cod_seccion} · Turno ${seccion.turno}`],
+    ['Créditos', String(c.creditos ?? '')],
+    ['Docente', docente || seccion.docente || ''],
+  ]
+  let y = 33
+  datos.forEach(([k, v]) => {
+    doc.setFont('helvetica', 'normal')
+    doc.text(k, 12, y)
+    doc.setFont('helvetica', 'bold')
+    doc.text(v, 45, y)
+    y += 5
+  })
+  doc.setLineWidth(0.5)
+  doc.line(12, y, 198, y)
+
+  const n = (v) => (v === null || v === undefined ? '' : formatoNota(v))
+  const p = (v) => (v === null || v === undefined || v === '' ? '' : formatoParcial(v))
+  autoTable(doc, {
+    ...tablaBase,
+    startY: y + 1,
+    head: [['N°', 'Código', 'Apellidos y nombres', 'N1', 'N2', 'N3', 'Su', 'Pr', 'Ap', 'Nota', 'Letras']],
+    body: alumnos.map((a, i) => [
+      i + 1,
+      a.cod_alumno,
+      `${a.apellidos.toUpperCase()}, ${a.nombres.toUpperCase()}`,
+      p(a.notas.n1),
+      p(a.notas.n2),
+      p(a.notas.n3),
+      p(a.notas.sustitutorio),
+      n(a.promedio),
+      p(a.notas.aplazado),
+      n(a.nota_final),
+      a.nota_final === null || a.nota_final === undefined ? '' : NUMEROS[redondear(a.nota_final)] || ''
+    ]),
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 8 },
+      1: { halign: 'center', cellWidth: 18 },
+      2: { cellWidth: 70 },
+      3: { halign: 'center', cellWidth: 9 },
+      4: { halign: 'center', cellWidth: 9 },
+      5: { halign: 'center', cellWidth: 9 },
+      6: { halign: 'center', cellWidth: 9 },
+      7: { halign: 'center', cellWidth: 9 },
+      8: { halign: 'center', cellWidth: 9 },
+      9: { halign: 'center', cellWidth: 11, fontStyle: 'bold' },
+      10: { cellWidth: 25 }
+    }
+  })
+  y = doc.lastAutoTable.finalY + 3
+  lineaFinal(doc, y)
+  const con = alumnos.filter((a) => a.nota_final !== null && a.nota_final !== undefined)
+  const aprob = con.filter((a) => redondear(a.nota_final) >= notaMinima).length
+  doc.setFontSize(8.5)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Matriculados: ${alumnos.length}    Aprobados: ${aprob}    Desaprobados: ${con.length - aprob}    Sin nota: ${alumnos.length - con.length}`, 12, y + 6)
+  // Firmas
+  const yf = Math.min(Math.max(y + 35, 230), 275)
+  doc.setLineWidth(0.3)
+  doc.line(25, yf, 90, yf)
+  doc.line(120, yf, 185, yf)
+  doc.text('Firma del docente', 57.5, yf + 4.5, { align: 'center' })
+  doc.text(docente || seccion.docente || '', 57.5, yf + 8.5, { align: 'center' })
+  doc.text('V.° B.° Director de Escuela', 152.5, yf + 4.5, { align: 'center' })
+  doc.save(`acta_${c.codigo_curso || c.cod_curso}_${seccion.cod_seccion}_${String(periodo?.cod_per_acad || '').replace('-', '_')}.pdf`)
+}
+
+const NUMEROS = [
+  'CERO', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE', 'DIEZ',
+  'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE', 'VEINTE'
+]

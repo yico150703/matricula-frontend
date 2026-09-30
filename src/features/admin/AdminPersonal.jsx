@@ -34,6 +34,7 @@ export default function AdminPersonal() {
   const [copiado, setCopiado] = useState(false)
 
   const cargar = useCallback(() => {
+    setError(null)
     adminApi
       .personal()
       .then((r) => setLista(r.usuarios))

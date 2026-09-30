@@ -264,7 +264,11 @@ export default function AdminNotas() {
       <div className="page-hero">
         <div>
           <p className="eyebrow">Administración</p>
-          <h1>Calificaciones</h1>
+          <h1>Notas históricas</h1>
+          <p className="muted">
+            Notas de cursos llevados antes del sistema (convalidaciones y récord anterior). Las notas de los cursos del sistema las registra cada
+            docente en su acta y las aprueba el Director de Escuela; su avance se ve en «Seguimiento de notas».
+          </p>
         </div>
       </div>
 

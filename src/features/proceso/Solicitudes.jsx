@@ -153,6 +153,7 @@ export default function Solicitudes({ user }) {
 
   const cargar = useCallback(async () => {
     if (!periodoId) return
+    setError(null)
     try {
       const [r, d] = await Promise.all([
         procesoApi.solicitudes(periodoId),

@@ -23,6 +23,7 @@ export default function DocenteHorario({ user }) {
 
   const cargar = useCallback(async () => {
     if (!periodoId) return
+    setError(null)
     try {
       setData(await docenteApi.horario(periodoId))
     } catch (err) {
