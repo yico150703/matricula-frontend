@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { TriangleAlert } from 'lucide-react'
 import App from './App'
+import { activarTablasMoviles } from './utils/tablasMoviles'
 import './styles.css'
 
 class ErrorBoundary extends React.Component {
@@ -66,3 +67,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </React.StrictMode>
 )
+
+activarTablasMoviles()

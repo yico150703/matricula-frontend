@@ -18,11 +18,19 @@ const CUENTAS_PRUEBA = [
 const MOSTRAR_CUENTAS = import.meta.env.VITE_MOSTRAR_CUENTAS_PRUEBA !== 'false'
 
 function CuentasPrueba({ onUsar }) {
+  // En celular se muestra plegada para que el formulario de ingreso quede a la vista
+  const [abierta] = useState(() => {
+    try {
+      return window.matchMedia('(min-width: 641px)').matches
+    } catch {
+      return true
+    }
+  })
   return (
-    <div className="demo-accounts">
-      <div className="demo-accounts-head">
+    <details className="demo-accounts" open={abierta}>
+      <summary className="demo-accounts-head">
         <KeyRound size={15} /> Cuentas de prueba · toca una para completar
-      </div>
+      </summary>
       <ul>
         {CUENTAS_PRUEBA.map(({ rol, usuario, clave, icon: Icon }) => (
           <li key={usuario}>
@@ -43,7 +51,7 @@ function CuentasPrueba({ onUsar }) {
         Son cuentas compartidas: su contraseña no se puede cambiar, así todos pueden entrar. Las cuentas reales piden cambiar la contraseña al primer
         ingreso.
       </p>
-    </div>
+    </details>
   )
 }
 
@@ -82,6 +90,8 @@ export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
               setUsuario(u)
               setPassword(c)
               setError('')
+              // En celular el botón Ingresar queda más abajo: se lleva a la vista
+              document.querySelector('.auth-form button[type="submit"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
             }}
           />
         )}
@@ -95,7 +105,7 @@ export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
             onChange={(e) => setUsuario(e.target.value)}
             autoComplete="username"
             placeholder="Ej. 2024035025 o nombre@unfv.edu.pe"
-            autoFocus
+            autoFocus={window.innerWidth > 640}
           />
         </label>
         <label className="field">

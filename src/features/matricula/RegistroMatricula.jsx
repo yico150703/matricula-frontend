@@ -469,7 +469,20 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
         )}
       </div>
 
-      <aside className="cart-panel">
+      {/* Celular: resumen fijo del carrito abajo; al tocarlo lleva al carrito (que queda al final de la página) */}
+      <button
+        type="button"
+        className="cart-bar"
+        onClick={() => document.getElementById('carrito-matricula')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+      >
+        <ShoppingCart size={18} />
+        <span>
+          <b>{carrito.items.length}</b> en el carrito · {creditosTotal}/{carrito.max_creditos} créditos
+        </span>
+        <strong>Ver carrito</strong>
+      </button>
+
+      <aside className="cart-panel" id="carrito-matricula">
         <div className="cart-head">
           <h3>
             <ShoppingCart size={18} /> Mi carrito

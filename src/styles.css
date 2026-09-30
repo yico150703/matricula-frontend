@@ -2579,3 +2579,66 @@ svg { flex-shrink: 0; }
 .sesiones-editor select.invalida { border-color: #dc2626; background: #fee2e2; }
 .calendario-preview { text-transform: none; }
 .fase-periodo { padding: 0.35rem 0.85rem; font-weight: 700; font-size: 0.85rem; }
+
+/* =========================================================
+   19. CELULAR: tablas como tarjetas, campos sin zoom en iPhone, carrito
+   ========================================================= */
+.cart-bar { display: none; }
+.demo-accounts > summary { cursor: pointer; list-style: none; }
+.demo-accounts > summary::-webkit-details-marker { display: none; }
+.demo-accounts > summary::after { content: '▾'; margin-left: auto; font-size: 0.9rem; }
+.demo-accounts:not([open]) > summary { margin-bottom: 0; }
+.demo-accounts:not([open]) > summary::after { content: '▸'; }
+
+@media (max-width: 1100px) {
+  /* El carrito va después de los cursos; una barra fija abajo resume y lleva a él */
+  .cart-panel { order: 0; scroll-margin-top: 80px; }
+  .matricula-layout { padding-bottom: 4.5rem; }
+  .cart-bar {
+    display: flex; align-items: center; gap: 0.6rem; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 40;
+    background: var(--unfv-black); color: #fff; border-radius: 14px; padding: 0.75rem 1rem; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    font-size: 0.88rem; text-align: left;
+  }
+  .cart-bar span { flex: 1; min-width: 0; }
+  .cart-bar strong { color: #FFB38A; white-space: nowrap; }
+  .cart-bar svg { color: var(--unfv-orange); flex-shrink: 0; }
+}
+
+@media (max-width: 640px) {
+  /* iOS hace zoom al enfocar campos con letra menor a 16 px */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* Tablas de datos como tarjetas (la tabla de notas del docente se mantiene como grilla) */
+  .data-table:not(.notas-table) thead { display: none; }
+  .data-table:not(.notas-table), .data-table:not(.notas-table) tbody, .data-table:not(.notas-table) tr, .data-table:not(.notas-table) td { display: block; width: 100%; }
+  .data-table:not(.notas-table) tr { background: #fff; border: 1px solid var(--unfv-border); border-radius: 12px; margin: 0 0 0.6rem; padding: 0.35rem 0.8rem; box-shadow: 0 1px 4px rgba(124,45,5,.05); }
+  .data-table:not(.notas-table) tbody tr:hover { background: #fff; }
+  .data-table:not(.notas-table), .data-table:not(.notas-table) tr, .data-table:not(.notas-table) td { box-sizing: border-box; }
+  /* Etiqueta de la columna a la izquierda; el contenido (uno o varios elementos) apilado a la derecha */
+  .data-table:not(.notas-table) td {
+    display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); column-gap: 0.75rem; row-gap: 0.15rem; align-items: center;
+    justify-items: end; padding: 0.45rem 0; border-bottom: 1px dashed #f0e4da; text-align: right; min-height: 2.2rem; overflow-wrap: anywhere;
+  }
+  .data-table:not(.notas-table) td:last-child { border-bottom: 0; }
+  .data-table:not(.notas-table) td::before {
+    content: attr(data-label); grid-column: 1; grid-row: 1 / span 9; align-self: start; padding-top: 0.15rem; max-width: 9rem; text-align: left;
+    justify-self: start; font-size: 0.7rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #78716c;
+  }
+  .data-table:not(.notas-table) td[data-label=""]::before { display: none; }
+  .data-table:not(.notas-table) td[data-label=""] { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 0.4rem; }
+  .data-table:not(.notas-table) td > * { max-width: 100%; }
+  .data-table:not(.notas-table) td select, .data-table:not(.notas-table) .aulas-sesion { min-width: 0; width: 100%; }
+  .data-table:not(.notas-table) td .aulas-sesion select { max-width: 100%; }
+  .data-table.prog-table td.actions-cell { white-space: normal; }
+  .table-scroll:has(> .data-table:not(.notas-table)) { overflow: visible; }
+  .prog-card .table-scroll { padding: 0 0.6rem 0.4rem; }
+}
+@media (max-width: 640px) {
+  .prog-card header { grid-template-columns: auto minmax(0, 1fr); }
+  .prog-card header > div { min-width: 0; overflow-wrap: anywhere; }
+  .prog-card header > button { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 640px) {
+  .data-table:not(.notas-table) td > * { min-width: 0; }
+  .data-table:not(.notas-table) td .pill, .data-table:not(.notas-table) td small, .data-table:not(.notas-table) td code { white-space: normal; text-align: right; }
+}
