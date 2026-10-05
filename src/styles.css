@@ -2029,9 +2029,6 @@ button:disabled {
 .stat span { font-size: 0.82rem; color: var(--unfv-text-muted); }
 .stat.stat-warn { border-top-color: #f59e0b; }
 .stat-grid + .info-strip { margin-top: 1rem; }
-.roles-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
-.roles-grid h4 { margin: 0 0 0.4rem; color: #7c2d05; }
-.roles-grid ul { margin: 0; padding-left: 1.1rem; color: #475569; font-size: 0.88rem; line-height: 1.7; }
 .student-strip { display: flex; gap: 0.9rem; flex-wrap: wrap; align-items: center; margin-top: 0.3rem; padding: 0.75rem 1rem; background: var(--unfv-box-bg); border-radius: 10px; font-size: 0.9rem; color: #7c2d05; }
 
 /* Configuración */

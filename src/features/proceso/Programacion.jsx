@@ -28,6 +28,8 @@ const TITULOS = {
 }
 const FASE_EDICION = { jefe: 1, director: 2, asistente: 3 }
 const SUBTITULO_LECTURA = 'Consulta la programación del período. Para cambiar algo usa “Solicitar cambio”; el otro rol lo revisará.'
+// La escuela programa como máximo tres secciones por curso (los electivos también usan A)
+const LETRAS = ['A', 'B', 'C']
 const ESTADO_DOCENTE = {
   pendiente: ['Por confirmar', 'pill-warn'],
   confirmado: ['Confirmado', 'pill-ok'],
@@ -36,7 +38,7 @@ const ESTADO_DOCENTE = {
 
 function SeccionModal({ idPeriodo, curso, seccion, onClose, onSaved }) {
   const usadas = curso.secciones.map((s) => s.cod_seccion)
-  const [letra, setLetra] = useState(seccion?.cod_seccion || ['A', 'B', 'C', 'D', 'E'].find((l) => !usadas.includes(l)) || 'A')
+  const [letra, setLetra] = useState(seccion?.cod_seccion || LETRAS.find((l) => !usadas.includes(l)) || 'A')
   const [turno, setTurno] = useState(seccion?.turno || 'M')
   const [cupo, setCupo] = useState(seccion?.cupo_maximo || 30)
   const [sesiones, setSesiones] = useState(seccion ? sesionesIniciales(seccion) : sesionesPorPlan(horasPlan(curso)))
@@ -82,10 +84,9 @@ function SeccionModal({ idPeriodo, curso, seccion, onClose, onSaved }) {
         <label className="field">
           Sección
           <select value={letra} onChange={(e) => setLetra(e.target.value)} disabled={Boolean(seccion)}>
-            {['A', 'B', 'C', 'D', 'E'].map((l) => (
+            {LETRAS.map((l) => (
               <option key={l} value={l} disabled={!seccion && usadas.includes(l)}>
                 {l}
-                {l === 'E' ? ' (electivo)' : ''}
               </option>
             ))}
           </select>
@@ -380,13 +381,6 @@ export default function Programacion({ user }) {
               </div>
             )}
             {esperando && <p className="muted">{esperando}</p>}
-            {!esperando && puedoEditar && fase !== 3 && (
-              <p className="muted small">
-                {rol === 'jefe' && 'Crea o edita las secciones de cada curso. Cuando termines, envía la programación al Director de Escuela.'}
-                {rol === 'director' && 'Elige el docente de cada sección. Si un horario no funciona, devuélvelo al Jefe indicando el motivo.'}
-                {rol === 'asistente' && 'Asigna el pabellón, aula o laboratorio de cada sesión.'}
-              </p>
-            )}
             {!puedoEditar && puedoSolicitar && (
               <p className="muted small">
                 <Lock size={13} /> Tu fase de edición ya pasó: para cambiar algo usa “Solicitar cambio” en la sección.
@@ -461,7 +455,7 @@ export default function Programacion({ user }) {
                   {c.mencion_electiva ? ' · Electivo' : ''}
                 </small>
               </div>
-              {rol === 'jefe' && puedoEditar && (
+              {rol === 'jefe' && puedoEditar && c.secciones.length < LETRAS.length && (
                 <button type="button" className="btn-secondary btn-sm" onClick={() => setEditando({ curso: c })}>
                   <Plus size={14} /> Sección
                 </button>

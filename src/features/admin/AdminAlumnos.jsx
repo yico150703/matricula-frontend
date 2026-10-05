@@ -199,10 +199,6 @@ export default function AdminAlumnos() {
         <h3>
           <UserPlus size={19} /> Registrar nuevo alumno
         </h3>
-        <p className="muted small">
-          Solo necesitas el código, nombres, apellidos y plan. El correo institucional se genera automáticamente y la
-          contraseña inicial será el mismo código (el alumno deberá cambiarla en su primer ingreso).
-        </p>
         <form className="form-grid form-grid-4" onSubmit={submit}>
           <label className="field">
             Código de alumno *

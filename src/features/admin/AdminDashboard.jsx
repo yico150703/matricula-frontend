@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CalendarPlus, KeyRound, Link2, RotateCcw, ShieldCheck, Target, Trash2, User, UserPlus } from 'lucide-react'
+import { CalendarPlus, KeyRound, Link2, RotateCcw, Target, Trash2, UserPlus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { adminApi } from '../../api/client'
 import { errorInicioPrimero, fechaLarga, finDeClases, inicioSegundo, rangoInicioPrimero } from '../../utils/calendario'
@@ -170,10 +170,6 @@ export default function AdminDashboard() {
 
       <article className="panel-card">
         <h3>Períodos académicos</h3>
-        <p className="muted small">
-          Cada período tiene 16 semanas de clases, luego 1 semana de vacaciones; el período 2 empieza el lunes siguiente. El período 1 empieza un lunes de
-          marzo, abril o mayo. La matrícula se abre sola cuando todos los docentes confirman sus horarios (fase 5).
-        </p>
         <form className="form-grid form-grid-4 periodo-form" onSubmit={crearPeriodo}>
           <label className="field">
             Nuevo período
@@ -267,36 +263,6 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
-        </div>
-      </article>
-
-      <article className="panel-card">
-        <h3>Permisos por rol</h3>
-        <div className="roles-grid">
-          <div>
-            <h4>
-              <User size={16} /> Alumno
-            </h4>
-            <ul>
-              <li>Matricularse con carrito (reserva de 10 min) y retirar cursos</li>
-              <li>Ver su malla, horario e historial (solo lectura)</li>
-              <li>Descargar su ficha de matrícula en PDF</li>
-              <li>Cambiar su contraseña y datos de contacto</li>
-            </ul>
-          </div>
-          <div>
-            <h4>
-              <ShieldCheck size={16} /> Administrador
-            </h4>
-            <ul>
-              <li>Registrar alumnos (correo y contraseña se generan solos)</li>
-              <li>Editar datos, plan y estado de los alumnos</li>
-              <li>Atender solicitudes de recuperación de contraseña</li>
-              <li>Supervisar las actas de notas (las registra el docente y las aprueba el Director) y registrar notas históricas</li>
-              <li>Crear cuentas del personal y asignar roles</li>
-              <li>Crear períodos académicos</li>
-            </ul>
-          </div>
         </div>
       </article>
     </section>

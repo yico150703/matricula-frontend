@@ -204,10 +204,6 @@ export default function SalonNotas({ user }) {
           </table>
         </div>
         {invalidas && <p className="form-error">Las notas deben estar entre 0 y 20.</p>}
-        <p className="muted small">
-          Promedio de N1, N2 y N3 (el sustitutorio reemplaza a la nota más baja si es mayor); se redondea desde .5. Si hay aplazado, esa es la nota
-          final. Nota mínima aprobatoria: {data.nota_minima}.
-        </p>
       </article>
 
       <article className="panel-card acta-envio">
