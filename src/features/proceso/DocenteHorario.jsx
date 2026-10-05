@@ -6,6 +6,7 @@ import Timetable from '../../components/Timetable'
 import { colorCurso, DIAS_LARGOS, romano, sesionesDe, TURNOS } from '../../utils/academico'
 import { SolicitudModal } from './editores'
 import { PeriodoSelect, usePeriodoConsulta, useProceso } from './ProcesoContext'
+import { Mensaje } from '../../components/Aviso'
 
 const ESTADO = {
   pendiente: ['Por confirmar', 'pill-warn'],
@@ -102,7 +103,7 @@ export default function DocenteHorario({ user }) {
         </Empty>
       ) : (
         <>
-          {msg && <div className={msg.ok ? 'alert-box-success' : 'alert-box-error'}>{msg.text}</div>}
+          <Mensaje msg={msg} className="alert-box-error" />
           {pendientes.length > 0 && p.fase <= 6 && (
             <div className="bulk-bar">
               <span>
@@ -125,7 +126,7 @@ export default function DocenteHorario({ user }) {
                 color: colorCurso(s.id_curso),
                 titulo: `${s.curso?.abreviatura} (${s.cod_seccion})`,
                 detalle: x.ubicacion?.texto || x.aula,
-                tooltip: `${s.curso?.nombre_curso} · Ciclo ${s.curso?.ciclo}`
+                tooltip: `${s.curso?.nombre_curso} - ${s.cod_seccion} · Ciclo ${s.curso?.ciclo}`
               }))
             )}
           />
@@ -137,9 +138,11 @@ export default function DocenteHorario({ user }) {
                   <header>
                     <span className="legend-abrev">{s.curso?.abreviatura}</span>
                     <div>
-                      <strong>{s.curso?.nombre_curso}</strong>
+                      <strong>
+                        {s.curso?.nombre_curso} - {s.cod_seccion}
+                      </strong>
                       <small>
-                        {s.curso?.codigo_curso} · Ciclo {romano(s.curso?.ciclo)} · Secc. {s.cod_seccion} · {TURNOS[s.turno]} · {s.cupo_maximo} alumnos
+                        {s.curso?.codigo_curso} · Ciclo {romano(s.curso?.ciclo)} · {TURNOS[s.turno]} · {s.cupo_maximo} alumnos
                       </small>
                     </div>
                   </header>

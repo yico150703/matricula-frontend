@@ -23,7 +23,8 @@ import {
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { PASSWORD_CHANGE_EVENT, SESSION_EXPIRED_EVENT, TOKEN_STORAGE_KEY, authApi, session } from './api/client'
 import TopBar from './components/TopBar'
-import useInactivityTimer from './components/useInactivityTimer'
+import useSessionCountdown from './components/useInactivityTimer'
+import { Avisos } from './components/Aviso'
 import AdminAlumnos from './features/admin/AdminAlumnos'
 import AdminDashboard from './features/admin/AdminDashboard'
 import AdminNotas from './features/admin/AdminNotas'
@@ -48,12 +49,10 @@ import MisSalones from './features/notas/MisSalones'
 import SalonNotas from './features/notas/SalonNotas'
 import { planPorId } from './utils/academico'
 
-// OWASP recomienda cerrar por inactividad entre 2-5 min (alto riesgo) y 15-30 min (bajo riesgo).
-// Para una sesión de matrícula se usa un punto intermedio: 10 minutos.
-export const INACTIVIDAD_SEGUNDOS = 10 * 60
-
 // Roles que participan en el proceso de horarios: ven la barra de fases arriba
 const ROLES_PROCESO = ['jefe', 'director', 'asistente', 'docente']
+// El administrador también ve la barra de fases: supervisa que el proceso se cumpla
+const CON_BARRA_FASES = [...ROLES_PROCESO, 'admin']
 
 // Pantalla de inicio de cada rol
 const INICIO = {
@@ -85,6 +84,8 @@ const NAV = {
   ],
   admin: [
     ['/admin', 'Panel de control', LayoutDashboard],
+    ['/admin/proceso', 'Proceso de horarios', CalendarRange],
+    ['/admin/solicitudes', 'Solicitudes de cambio', MessagesSquare],
     ['/admin/personal', 'Personal y roles', ShieldCheck],
     ['/admin/alumnos', 'Gestión de alumnos', Users],
     ['/admin/actas', 'Seguimiento de notas', ClipboardCheck],
@@ -127,6 +128,8 @@ function Rutas({ user, rol, onUserUpdated }) {
         <Route path="/admin/alumnos" element={<AdminAlumnos />} />
         <Route path="/admin/actas" element={<ActasRevision soloLectura />} />
         <Route path="/admin/notas" element={<AdminNotas />} />
+        <Route path="/admin/proceso" element={<ProcesoGate><Programacion user={user} /></ProcesoGate>} />
+        <Route path="/admin/solicitudes" element={<ProcesoGate><Solicitudes user={user} /></ProcesoGate>} />
         {configuracion}
         {otra}
       </Routes>
@@ -173,6 +176,7 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
   const closeMenu = () => setMenuOpen(false)
   const isAdmin = rol === 'admin'
   const enProceso = ROLES_PROCESO.includes(rol)
+  const conFases = CON_BARRA_FASES.includes(rol)
   const location = useLocation()
 
   const contenido = (
@@ -242,7 +246,7 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
       </aside>
 
       <main className="unfv-main-content">
-        {enProceso && <FaseBar />}
+        {conFases && location.pathname !== '/configuracion' && <FaseBar />}
         {enProceso && location.pathname !== '/configuracion' ? (
           <ProcesoGate>
             <Rutas user={user} rol={rol} onUserUpdated={onUserUpdated} />
@@ -253,11 +257,12 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
       </main>
 
       <DiagramaERModal isOpen={diagramaOpen} onClose={() => setDiagramaOpen(false)} />
+      <Avisos />
     </div>
   )
 
   // El estado del proceso (período y fase) se comparte entre la barra de fases y las pantallas del personal
-  return enProceso ? <ProcesoProvider rol={rol}>{contenido}</ProcesoProvider> : contenido
+  return conFases ? <ProcesoProvider rol={rol}>{contenido}</ProcesoProvider> : contenido
 }
 
 export default function App() {
@@ -324,7 +329,8 @@ export default function App() {
     }
   }, [logout])
 
-  const secondsLeft = useInactivityTimer(Boolean(auth), INACTIVIDAD_SEGUNDOS, () => logout('Se cerró la sesión por 10 minutos de inactividad.'))
+  // Solo los alumnos tienen tiempo límite (fijo desde que ingresan); el personal no tiene contador
+  const secondsLeft = useSessionCountdown(auth?.rol === 'alumno', () => logout('Terminó tu tiempo de sesión. Vuelve a ingresar para continuar.'))
 
   const loggedIn = (user, rol, token) => {
     session.set(token)

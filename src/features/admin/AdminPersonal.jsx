@@ -2,6 +2,7 @@ import { Ban, Check, Copy, KeyRound, Search, UserCheck, UserPlus } from 'lucide-
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { adminApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
+import { Mensaje } from '../../components/Aviso'
 
 const ROLES = {
   jefe: 'Jefe de Departamento',
@@ -188,7 +189,7 @@ export default function AdminPersonal() {
         )}
       </article>
 
-      {msg && <p className={msg.ok ? 'form-success' : 'form-error'}>{msg.text}</p>}
+      <Mensaje msg={msg} />
 
       <article className="panel-card">
         <div className="card-head">

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { adminApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
 import { PLANES, correoInstitucional, planPorId } from '../../utils/academico'
+import { Mensaje } from '../../components/Aviso'
 
 const EMPTY = { cod_alumno: '', nombres: '', apellidos: '', id_plan: 1 }
 
@@ -286,7 +287,7 @@ export default function AdminAlumnos() {
             </button>
           </div>
         </div>
-        {msg && <p className={msg.ok ? 'form-success' : 'form-error'}>{msg.text}</p>}
+        <Mensaje msg={msg} />
 
         {error ? (
           <ErrorState error={error} retry={load} />

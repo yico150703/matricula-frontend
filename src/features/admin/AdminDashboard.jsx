@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { adminApi } from '../../api/client'
 import { errorInicioPrimero, fechaLarga, finDeClases, inicioSegundo, rangoInicioPrimero } from '../../utils/calendario'
 import { ErrorState, Loading } from '../../components/AsyncState'
+import { Mensaje } from '../../components/Aviso'
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null)
@@ -113,7 +114,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {msg && <p className={msg.ok ? 'form-success' : 'form-error'}>{msg.text}</p>}
+      <Mensaje msg={msg} />
 
       <article className="panel-card">
         <h3>

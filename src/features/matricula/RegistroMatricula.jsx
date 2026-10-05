@@ -12,7 +12,7 @@ import {
   Plus,
   RefreshCcw,
   Repeat,
-  ShoppingCart,
+  ListChecks,
   Trash2,
   User,
   X,
@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom'
 import { carritoApi, matriculaApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
 import { colorCurso, horarioCorto, planPorId, romano, seCruzan, TURNOS } from '../../utils/academico'
+import { Mensaje } from '../../components/Aviso'
 
 const descargarFicha = (alumno, periodo, matricula) =>
   import('../../utils/generatePdf').then(({ descargarFichaMatriculaPDF }) => descargarFichaMatriculaPDF({ alumno, periodo, matricula }))
@@ -31,7 +32,7 @@ function Vacantes({ s }) {
   const libres = Math.max(0, s.limite - s.matriculados - s.reservados)
   const pct = Math.min(100, ((s.matriculados + s.reservados) / Math.max(1, s.limite)) * 100)
   return (
-    <div className="vacantes" title={`Capacidad ${s.capacidad} · matriculados ${s.matriculados} · reservados en carritos ${s.reservados}`}>
+    <div className="vacantes" title={`Capacidad ${s.capacidad} · matriculados ${s.matriculados} · reservados por otros alumnos ${s.reservados}`}>
       <div className="vacantes-bar">
         <i style={{ width: `${pct}%` }} className={libres === 0 ? 'full' : pct > 80 ? 'warn' : ''} />
       </div>
@@ -44,16 +45,17 @@ function Vacantes({ s }) {
   )
 }
 
-function SeccionOpcion({ s, curso, estadoSec, onAdd, onRemove, busy }) {
+function SeccionOpcion({ s, curso, estadoSec, onAdd, onRemove, busy, unica = false }) {
   const { enCarrito, matriculada, cruce, llena } = estadoSec
   const deshabilitada = !enCarrito && !matriculada && (cruce || llena || busy)
   return (
     <div className={`sec-option ${enCarrito ? 'in-cart' : ''} ${matriculada ? 'enrolled' : ''} ${deshabilitada ? 'disabled' : ''}`}>
       <div className="sec-head">
         <span className="sec-letter">{s.cod_seccion}</span>
+        {unica && <span className="small muted">Horario único</span>}
         <span className={`turno-pill turno-${s.turno}`}>{TURNOS[s.turno] || s.turno}</span>
         {matriculada && <span className="pill pill-ok">Matriculado</span>}
-        {enCarrito && <span className="pill pill-info">En carrito</span>}
+        {enCarrito && <span className="pill pill-info">Seleccionado</span>}
       </div>
       <div className="sec-body">
         <span>
@@ -72,7 +74,7 @@ function SeccionOpcion({ s, curso, estadoSec, onAdd, onRemove, busy }) {
           </span>
         )}
       </div>
-      {!matriculada &&
+      {!matriculada && !unica &&
         (enCarrito ? (
           <button type="button" className="btn-secondary btn-sm" onClick={() => onRemove(s)} disabled={busy}>
             <X size={14} /> Quitar
@@ -98,11 +100,12 @@ const ESTADOS = {
   bloqueado_por_prerrequisito: ['Bloqueado', 'pill-lock'],
 }
 
-function CursoFila({ curso, children, abierto, onToggle }) {
+function CursoFila({ curso, children, abierto, onToggle, accion }) {
   const [label, cls] = ESTADOS[curso.estado] || [curso.estado, 'pill-muted']
   const bloqueado = curso.estado === 'bloqueado_por_prerrequisito' || curso.estado === 'aprobado'
   return (
     <article className={`curso-card ${bloqueado ? 'is-locked' : ''}`} style={{ '--c': colorCurso(curso.id_curso) }}>
+      <div className="curso-card-row">
       <button type="button" className="curso-card-head" onClick={onToggle} disabled={bloqueado}>
         <span className="curso-abrev">{curso.abreviatura}</span>
         <span className="curso-titulo">
@@ -119,6 +122,8 @@ function CursoFila({ curso, children, abierto, onToggle }) {
         </span>
         <span className={`pill ${cls}`}>{label}</span>
       </button>
+      {!bloqueado && accion}
+      </div>
       {abierto && !bloqueado && <div className="sec-grid">{children}</div>}
     </article>
   )
@@ -136,14 +141,8 @@ function Cronometro({ segundos, onExpire }) {
     const t = setTimeout(() => setLeft((v) => v - 1), 1000)
     return () => clearTimeout(t)
   }, [left, onExpire])
-  if (left === null || left === undefined) return null
-  const m = String(Math.floor(left / 60)).padStart(2, '0')
-  const s = String(left % 60).padStart(2, '0')
-  return (
-    <span className={`cart-timer ${left < 120 ? 'low' : ''}`} title="Tiempo de reserva de tus vacantes">
-      <Clock size={15} /> {m}:{s}
-    </span>
-  )
+  // La reserva vence sola en el servidor; en pantalla solo se muestra el tiempo de sesión del alumno (arriba)
+  return null
 }
 
 export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCiclo }) {
@@ -291,13 +290,39 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
 
   const creditosTotal = carrito.creditos_matriculados + carrito.creditos_carrito
   const pct = Math.min(100, (creditosTotal / carrito.max_creditos) * 100)
-  const renderCurso = (curso) => (
-    <CursoFila key={curso.id_curso} curso={curso} abierto={abiertos[curso.id_curso] ?? true} onToggle={() => setAbiertos((a) => ({ ...a, [curso.id_curso]: !(a[curso.id_curso] ?? true) }))}>
-      {curso.secciones.map((s) => (
-        <SeccionOpcion key={s.id_seccion} s={s} curso={curso} estadoSec={estadoSeccion(curso, s)} onAdd={(_, sec) => agregar([sec.id_seccion])} onRemove={quitar} busy={busy} />
-      ))}
-    </CursoFila>
-  )
+  const toggle = (curso) => setAbiertos((a) => ({ ...a, [curso.id_curso]: !(a[curso.id_curso] ?? true) }))
+  const renderCurso = (curso) => {
+    // Electivo: una sola sección (E), así que no hay nada que elegir: se selecciona el curso directamente
+    const unica = curso.mencion_electiva && curso.secciones.length === 1 ? curso.secciones[0] : null
+    if (unica) {
+      const est = estadoSeccion(curso, unica)
+      const accion = est.matriculada ? null : est.enCarrito ? (
+        <button type="button" className="btn-secondary btn-sm curso-accion" onClick={() => quitar(unica)} disabled={busy}>
+          <X size={14} /> Quitar
+        </button>
+      ) : (
+        <button type="button" className="btn-primary btn-sm curso-accion" onClick={() => agregar([unica.id_seccion])} disabled={busy || est.cruce || est.llena}>
+          {est.llena ? 'Sin vacantes' : est.cruce ? 'Cruce de horario' : (
+            <>
+              <Plus size={14} /> Seleccionar
+            </>
+          )}
+        </button>
+      )
+      return (
+        <CursoFila key={curso.id_curso} curso={curso} abierto={abiertos[curso.id_curso] ?? false} onToggle={() => setAbiertos((a) => ({ ...a, [curso.id_curso]: !(a[curso.id_curso] ?? false) }))} accion={accion}>
+          <SeccionOpcion s={unica} curso={curso} estadoSec={est} onAdd={() => {}} onRemove={quitar} busy={busy} unica />
+        </CursoFila>
+      )
+    }
+    return (
+      <CursoFila key={curso.id_curso} curso={curso} abierto={abiertos[curso.id_curso] ?? true} onToggle={() => toggle(curso)}>
+        {curso.secciones.map((s) => (
+          <SeccionOpcion key={s.id_seccion} s={s} curso={curso} estadoSec={estadoSeccion(curso, s)} onAdd={(_, sec) => agregar([sec.id_seccion])} onRemove={quitar} busy={busy} />
+        ))}
+      </CursoFila>
+    )
+  }
 
   if (exito) {
     const activos = exito.detalles.filter((d) => d.estado === 'matriculado' && d.seccion)
@@ -354,7 +379,7 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
           </button>
         </div>
 
-        {msg && <div className={msg.ok ? 'alert-box-success' : 'alert-box-error'}>{msg.text}</div>}
+        <Mensaje msg={msg} className="alert-box-error" />
 
         {tab === 'ciclo' && (
           <>
@@ -385,11 +410,7 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
 
         {tab === 'otros' && (
           <>
-            <p className="info-strip">
-              Aquí aparecen los cursos de otros ciclos que puedes llevar en {periodo.cod_per_acad}: los que desaprobaste (con sobrecupo
-              para repitentes) y los que aún no llevaste. Se suman a tu carrito y respetan el máximo de {carrito.max_creditos} créditos.
-              {bloqueadosOtros > 0 && ` ${bloqueadosOtros} cursos más siguen bloqueados por prerrequisitos.`}
-            </p>
+            {bloqueadosOtros > 0 && <p className="muted small">{bloqueadosOtros} cursos de otros ciclos siguen bloqueados por prerrequisitos.</p>}
             {otros.length === 0 ? (
               <p className="empty-note">No tienes cursos de otros ciclos disponibles en este período.</p>
             ) : (
@@ -469,23 +490,23 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
         )}
       </div>
 
-      {/* Celular: resumen fijo del carrito abajo; al tocarlo lleva al carrito (que queda al final de la página) */}
+      {/* Celular: resumen fijo de la selección abajo; al tocarlo lleva al panel (que queda al final de la página) */}
       <button
         type="button"
         className="cart-bar"
         onClick={() => document.getElementById('carrito-matricula')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
       >
-        <ShoppingCart size={18} />
+        <ListChecks size={18} />
         <span>
-          <b>{carrito.items.length}</b> en el carrito · {creditosTotal}/{carrito.max_creditos} créditos
+          <b>{carrito.items.length}</b> seleccionados · {creditosTotal}/{carrito.max_creditos} créditos
         </span>
-        <strong>Ver carrito</strong>
+        <strong>Ver selección</strong>
       </button>
 
       <aside className="cart-panel" id="carrito-matricula">
         <div className="cart-head">
           <h3>
-            <ShoppingCart size={18} /> Mi carrito
+            <ListChecks size={18} /> Cursos seleccionados
           </h3>
           {carrito.items.length > 0 && <Cronometro segundos={carrito.segundos_restantes} onExpire={onExpire} />}
         </div>
@@ -501,7 +522,7 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
             <i className="cart" style={{ width: `${Math.max(0, pct - (carrito.creditos_matriculados / carrito.max_creditos) * 100)}%` }} />
           </div>
           <small className="muted">
-            {carrito.creditos_matriculados} matriculados · {carrito.creditos_carrito} en el carrito
+            {carrito.creditos_matriculados} matriculados · {carrito.creditos_carrito} seleccionados
           </small>
         </div>
 
@@ -521,7 +542,7 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
                   </small>
                   <small>{horarioCorto(s)}</small>
                 </div>
-                <button type="button" className="icon-btn" onClick={() => quitar(s)} disabled={busy} aria-label="Quitar del carrito">
+                <button type="button" className="icon-btn" onClick={() => quitar(s)} disabled={busy} aria-label="Quitar de la selección">
                   <Trash2 size={16} />
                 </button>
               </li>
@@ -535,7 +556,7 @@ export default function RegistroMatricula({ alumno, periodo, ciclo, onCambiarCic
           </button>
           {carrito.items.length > 0 && (
             <button type="button" className="btn-link" onClick={vaciar} disabled={busy}>
-              Vaciar carrito
+              Quitar todos
             </button>
           )}
         </div>

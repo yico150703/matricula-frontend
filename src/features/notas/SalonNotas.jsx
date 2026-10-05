@@ -5,6 +5,7 @@ import { notasApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
 import { formatoNota, romano, TURNOS } from '../../utils/academico'
 import { abrirPdfActa, CAMPOS_NOTA, calcularNota, EstadoActa, notaValida } from './comun'
+import { Mensaje } from '../../components/Aviso'
 
 const aTexto = (v) => (v === null || v === undefined ? '' : String(v))
 
@@ -145,7 +146,7 @@ export default function SalonNotas({ user }) {
       )}
       {acta.estado === 'enviada' && <p className="form-notice">El acta está en revisión del Director de Escuela. No se puede editar mientras tanto.</p>}
       {acta.estado === 'aprobada' && <p className="form-success">Acta aprobada: estas notas ya son oficiales y los alumnos las ven en su historial.</p>}
-      {msg && <p className={msg.ok ? 'form-success' : 'form-error'}>{msg.text}</p>}
+      <Mensaje msg={msg} />
 
       <article className="panel-card">
         <div className="table-scroll">

@@ -1,4 +1,4 @@
-import { CalendarCheck2, ShieldCheck, ShoppingCart } from 'lucide-react'
+import { CalendarCheck2, ShieldCheck, ListChecks } from 'lucide-react'
 import logo from '../assets/logo-unfv.png'
 
 /** Diseño compartido de las pantallas públicas (login, recuperar y restablecer contraseña). */
@@ -20,7 +20,7 @@ export default function AuthLayout({ children, onOpenDiagramaER }) {
               <CalendarCheck2 size={18} /> Horarios oficiales con docentes y aulas
             </li>
             <li>
-              <ShoppingCart size={18} /> Carrito con reserva de vacante por 10 minutos
+              <ListChecks size={18} /> Selección de cursos con vacante reservada
             </li>
             <li>
               <ShieldCheck size={18} /> Acceso seguro con tu código de alumno

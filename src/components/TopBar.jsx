@@ -16,7 +16,7 @@ export default function TopBar({ user, rol, onLogout, onToggleMenu, secondsLeft 
     : user?.apellidos && user?.nombres
       ? `${user.apellidos.toUpperCase()}, ${user.nombres.toUpperCase()}`
       : user?.cod_alumno
-  const lowTime = secondsLeft <= 60
+  const lowTime = secondsLeft !== null && secondsLeft <= 60
 
   return (
     <header className="unfv-topbar">
@@ -33,9 +33,11 @@ export default function TopBar({ user, rol, onLogout, onToggleMenu, secondsLeft 
       <div className="topbar-right">
         <span className={`role-chip ${esAlumno ? 'role-alumno' : 'role-admin'} role-${rol}`}>{esAlumno ? 'Alumno' : user?.rol_nombre || 'Administrador'}</span>
 
-        <div className={`topbar-timer ${lowTime ? 'timer-low' : ''}`} title="La sesión se cierra tras 10 minutos sin actividad">
-          <Timer size={15} /> {formatTimer(secondsLeft)}
-        </div>
+        {esAlumno && secondsLeft !== null && (
+          <div className={`topbar-timer ${lowTime ? 'timer-low' : ''}`} title="Tiempo restante de tu sesión">
+            <Timer size={15} /> {formatTimer(secondsLeft)}
+          </div>
+        )}
 
         <button type="button" className="topbar-user" onClick={() => navigate('/configuracion')} title="Configuración de cuenta">
           <span className="topbar-user-name">{nombre}</span> <Settings size={16} />

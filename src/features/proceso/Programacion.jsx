@@ -18,18 +18,21 @@ import { procesoApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
 import Modal from '../../components/Modal'
 import { colorCurso, horarioCorto, romano, TURNOS } from '../../utils/academico'
-import { AulaSelect, bloquesDe, horasPlan, sesionesPorPlan, SesionesEditor, sesionesIniciales, SolicitudModal } from './editores'
+import { ajustarAlTurno, AulaSelect, DocenteCombo, bloquesDe, horasPlan, RANGO_TURNO, sesionesPorPlan, SesionesEditor, sesionesIniciales, SolicitudModal } from './editores'
 import { useProceso } from './ProcesoContext'
+import { Mensaje } from '../../components/Aviso'
 
 const TITULOS = {
   jefe: ['Programación de horarios', 'Crea las secciones de cada curso: turno, días y horas.'],
   director: ['Asignación de docentes', 'Elige al docente de cada sección y confirma la programación.'],
-  asistente: ['Asignación de aulas', 'Asigna pabellón, aula o laboratorio a cada sección.']
+  asistente: ['Asignación de aulas', 'Asigna pabellón, aula o laboratorio a cada sección.'],
+  admin: ['Proceso de horarios', 'Seguimiento de la programación del período: horarios, docentes y aulas.']
 }
 const FASE_EDICION = { jefe: 1, director: 2, asistente: 3 }
 const SUBTITULO_LECTURA = 'Consulta la programación del período. Para cambiar algo usa “Solicitar cambio”; el otro rol lo revisará.'
-// La escuela programa como máximo tres secciones por curso (los electivos también usan A)
+// Cursos regulares: secciones A, B y C. Electivos: una sola sección, la E (un solo horario)
 const LETRAS = ['A', 'B', 'C']
+const letrasDe = (curso) => (curso?.mencion_electiva ? ['E'] : LETRAS)
 const ESTADO_DOCENTE = {
   pendiente: ['Por confirmar', 'pill-warn'],
   confirmado: ['Confirmado', 'pill-ok'],
@@ -38,10 +41,14 @@ const ESTADO_DOCENTE = {
 
 function SeccionModal({ idPeriodo, curso, seccion, onClose, onSaved }) {
   const usadas = curso.secciones.map((s) => s.cod_seccion)
-  const [letra, setLetra] = useState(seccion?.cod_seccion || LETRAS.find((l) => !usadas.includes(l)) || 'A')
+  const [letra, setLetra] = useState(seccion?.cod_seccion || letrasDe(curso).find((l) => !usadas.includes(l)) || letrasDe(curso)[0])
   const [turno, setTurno] = useState(seccion?.turno || 'M')
   const [cupo, setCupo] = useState(seccion?.cupo_maximo || 30)
-  const [sesiones, setSesiones] = useState(seccion ? sesionesIniciales(seccion) : sesionesPorPlan(horasPlan(curso)))
+  const [sesiones, setSesiones] = useState(seccion ? sesionesIniciales(seccion) : sesionesPorPlan(horasPlan(curso), seccion?.turno || 'M'))
+  const cambiarTurno = (t) => {
+    setTurno(t)
+    setSesiones((prev) => ajustarAlTurno(prev, t))
+  }
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -84,7 +91,7 @@ function SeccionModal({ idPeriodo, curso, seccion, onClose, onSaved }) {
         <label className="field">
           Sección
           <select value={letra} onChange={(e) => setLetra(e.target.value)} disabled={Boolean(seccion)}>
-            {LETRAS.map((l) => (
+            {letrasDe(curso).map((l) => (
               <option key={l} value={l} disabled={!seccion && usadas.includes(l)}>
                 {l}
               </option>
@@ -93,10 +100,10 @@ function SeccionModal({ idPeriodo, curso, seccion, onClose, onSaved }) {
         </label>
         <label className="field">
           Turno
-          <select value={turno} onChange={(e) => setTurno(e.target.value)}>
+          <select value={turno} onChange={(e) => cambiarTurno(e.target.value)}>
             {Object.entries(TURNOS).map(([k, v]) => (
               <option key={k} value={k}>
-                {v}
+                {v} ({RANGO_TURNO[k][0]} a {RANGO_TURNO[k][1]})
               </option>
             ))}
           </select>
@@ -107,11 +114,10 @@ function SeccionModal({ idPeriodo, curso, seccion, onClose, onSaved }) {
         </label>
         <div className="field full">
           Días y horas de clase
-          <SesionesEditor value={sesiones} onChange={setSesiones} horas={horasPlan(curso)} />
-          <small className="field-hint">
-            Bloques de 50 min desde las 08:00. Según el plan, {curso.nombre_curso} tiene {curso.ht} h de teoría y {curso.hp} h de práctica por semana (mínimo{' '}
-            {horasPlan(curso)} bloques). Las secciones con la misma letra de un ciclo no deben cruzarse entre cursos.
-          </small>
+          <SesionesEditor value={sesiones} onChange={setSesiones} horas={horasPlan(curso)} turno={turno} />
+          <p className="plan-nota">
+            {curso.nombre_curso}: {curso.ht} h teoría, {curso.hp} h práctica por semana.
+          </p>
         </div>
         {error && <p className="form-error full">{error}</p>}
       </div>
@@ -176,6 +182,7 @@ export default function Programacion({ user }) {
   const [accion, setAccion] = useState(null)
   const [origen, setOrigen] = useState('')
   const [busy, setBusy] = useState(null)
+  const [errAula, setErrAula] = useState({}) // { id_seccion: mensaje } se queda visible junto a la sección
 
   const cargar = useCallback(async () => {
     if (!periodoId) return
@@ -238,8 +245,10 @@ export default function Programacion({ user }) {
     setMsg(null)
     try {
       reemplazarSeccion((await procesoApi.asignarAula(s.id_seccion, aula, sesion)).seccion)
+      setErrAula(({ [s.id_seccion]: _, ...resto }) => resto)
     } catch (err) {
-      setMsg({ ok: false, text: err.detail })
+      setErrAula((e) => ({ ...e, [s.id_seccion]: err.detail }))
+      setMsg({ ok: false, text: `No se asignó el aula a ${s.curso?.nombre_curso || 'la sección'} (${s.cod_seccion}): ${err.detail}` })
     } finally {
       setBusy(null)
     }
@@ -342,7 +351,7 @@ export default function Programacion({ user }) {
         <div>
           <p className="eyebrow">Período {p.periodo.cod_per_acad} · Escuela de Ingeniería de Sistemas</p>
           <h1>{titulo}</h1>
-          <p className="muted">{puedoEditar ? sub : fase === 7 ? 'Proceso cerrado: la programación queda solo para consulta.' : SUBTITULO_LECTURA}</p>
+          <p className="muted">{puedoEditar || rol === 'admin' ? sub : fase === 7 ? 'Proceso cerrado: la programación queda solo para consulta.' : SUBTITULO_LECTURA}</p>
         </div>
         <div className="hero-stats">
           <span>
@@ -362,7 +371,13 @@ export default function Programacion({ user }) {
           <AlertTriangle size={16} /> El director devolvió los horarios: “{p.observacion}”
         </div>
       )}
-      {msg && <div className={msg.ok ? 'alert-box-success' : 'alert-box-error'}>{msg.text}</div>}
+      <Mensaje msg={msg} className="alert-box-error" />
+      {fase >= 3 && fase <= 6 && cnt.sin_docente > 0 && (rol === 'director' || rol === 'admin') && (
+        <div className="alert-box-warn">
+          <AlertTriangle size={16} /> {cnt.sin_docente} {cnt.sin_docente === 1 ? 'sección sigue' : 'secciones siguen'} con «Docente por asignar».{' '}
+          {rol === 'director' ? 'Asígnalas desde la columna Docente antes de cerrar la matrícula.' : 'El Director debe completarlas antes del cierre.'}
+        </div>
+      )}
 
       {(botones.length > 0 || esperando || fase === 3) && (
         <div className="accion-panel">
@@ -423,6 +438,23 @@ export default function Programacion({ user }) {
         </div>
       )}
 
+      {rol === 'admin' && p.historial?.length > 0 && (
+        <details className="panel-card actividad-proceso">
+          <summary>Actividad reciente del proceso ({p.historial.length})</summary>
+          <ul>
+            {p.historial.map((h, i) => (
+              <li key={i}>
+                <time>{new Date(h.fecha).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' })}</time>
+                <span>
+                  <b>{h.usuario}</b> · {h.accion}
+                </span>
+                <small>Fase {h.fase}</small>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       <div className="toolbar wrap">
         <div className="search-wrap">
           <Search size={16} />
@@ -455,7 +487,7 @@ export default function Programacion({ user }) {
                   {c.mencion_electiva ? ' · Electivo' : ''}
                 </small>
               </div>
-              {rol === 'jefe' && puedoEditar && c.secciones.length < LETRAS.length && (
+              {rol === 'jefe' && puedoEditar && c.secciones.length < letrasDe(c).length && (
                 <button type="button" className="btn-secondary btn-sm" onClick={() => setEditando({ curso: c })}>
                   <Plus size={14} /> Sección
                 </button>
@@ -499,24 +531,16 @@ export default function Programacion({ user }) {
                           </td>
                           <td>{s.cupo_maximo}</td>
                           <td className="small">
-                            {rol === 'director' && puedoEditar ? (
-                              <select
-                                className="select-input docente-select"
-                                value={s.id_docente || ''}
-                                onChange={(e) => asignarDocente(s, e.target.value)}
+                            {rol === 'director' && (puedoEditar || (fase >= 3 && fase <= 6 && s.sin_docente)) ? (
+                              <DocenteCombo
+                                value={s.id_docente || null}
+                                actual={s.docente}
+                                docentes={docentes}
+                                onChange={(id) => asignarDocente(s, id)}
                                 disabled={busy === s.id_seccion}
-                              >
-                                <option value="">
-                                  {s.id_docente ? '— Quitar docente —' : s.docente !== 'POR ASIGNAR' ? s.docente : '— Asignar docente —'}
-                                </option>
-                                {docentes.map((d) => (
-                                  <option key={d.id_admin} value={d.id_admin}>
-                                    {d.nombre_docente} · {d.horas.toFixed(1)} h
-                                  </option>
-                                ))}
-                              </select>
+                              />
                             ) : (
-                              <span className={s.sin_docente ? 'text-warn' : ''}>{s.docente}</span>
+                              <span className={s.sin_docente ? 'text-warn' : ''}>{s.sin_docente ? 'Docente por asignar' : s.docente}</span>
                             )}
                           </td>
                           <td className="small">
@@ -542,6 +566,11 @@ export default function Programacion({ user }) {
                               )
                             ) : (
                               <span className={s.sin_aula ? 'text-warn' : ''}>{s.sin_aula ? 'Por asignar' : s.ubicacion?.texto}</span>
+                            )}
+                            {errAula[s.id_seccion] && (
+                              <div className="sec-warn aula-error">
+                                <AlertTriangle size={13} /> {errAula[s.id_seccion]}
+                              </div>
                             )}
                           </td>
                           {fase >= 4 && (

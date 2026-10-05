@@ -6,6 +6,7 @@ import Modal from '../../components/Modal'
 import { formatoNota, formatoParcial, romano, TURNOS } from '../../utils/academico'
 import { PeriodoSelect, usePeriodoConsulta } from '../proceso/ProcesoContext'
 import { abrirPdfActa, CAMPOS_NOTA, EstadoActa } from './comun'
+import { Mensaje } from '../../components/Aviso'
 
 const PESTANAS = [
   ['enviada', 'Por revisar'],
@@ -85,7 +86,7 @@ export default function ActasRevision({ soloLectura = false }) {
         ].map(([k, n]) => (n ? <i key={k} className={`seg-${k}`} style={{ flex: n }} title={`${n}`} /> : null))}
       </div>
 
-      {msg && <p className={msg.ok ? 'form-success' : 'form-error'}>{msg.text}</p>}
+      <Mensaje msg={msg} />
 
       <div className="tabs">
         {PESTANAS.map(([k, label]) => (

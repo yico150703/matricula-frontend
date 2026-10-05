@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { authApi } from '../../api/client'
 import { planPorId } from '../../utils/academico'
 import PasswordForm from './PasswordForm'
+import { Mensaje } from '../../components/Aviso'
 
 function Dato({ label, value }) {
   return (
@@ -102,7 +103,7 @@ export default function Configuracion({ user, rol, onUserUpdated }) {
                 </label>
               </>
             )}
-            {msg && <p className={`${msg.ok ? 'form-success' : 'form-error'} full`}>{msg.text}</p>}
+            <Mensaje msg={msg} className="form-error full" />
             <div className="form-actions full">
               <button className="btn-primary" disabled={saving}>
                 {saving ? 'Guardando…' : 'Guardar datos'}
@@ -114,8 +115,7 @@ export default function Configuracion({ user, rol, onUserUpdated }) {
         <article className="panel-card config-wide">
           <h3>Seguridad · Cambiar contraseña</h3>
           <p className="muted small">
-            Usa al menos 6 caracteres. {isAdmin ? '' : 'No puede ser igual a tu código de alumno. '}La sesión se cierra
-            automáticamente tras 10 minutos sin actividad.
+            Usa al menos 6 caracteres.{isAdmin ? '' : ' No puede ser igual a tu código de alumno.'}
           </p>
           <PasswordForm codigo={user.cod_alumno} onChanged={onUserUpdated} />
         </article>

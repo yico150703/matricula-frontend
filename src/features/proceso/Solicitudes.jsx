@@ -104,7 +104,7 @@ function Tarjeta({ sol, user, docentes, aulas, onChange }) {
                 <p>{m.texto}</p>
               </div>
             ))}
-            {sol.estado === 'pendiente' && (
+            {sol.estado === 'pendiente' && user.rol !== 'admin' && (
               <div className="msg-input">
                 <input
                   value={texto}
@@ -125,7 +125,7 @@ function Tarjeta({ sol, user, docentes, aulas, onChange }) {
                 <input type="checkbox" checked={modificar} onChange={(e) => setModificar(e.target.checked)} />
                 {sol.propuesta ? 'Aprobar con otra alternativa' : 'Definir el cambio que se aplicará'}
               </label>
-              {modificar && <PropuestaEditor tipo={sol.tipo} value={propuesta} onChange={setPropuesta} docentes={docentes} aulas={aulas} horas={horasPlan(sol.seccion?.curso)} />}
+              {modificar && <PropuestaEditor tipo={sol.tipo} value={propuesta} onChange={setPropuesta} docentes={docentes} aulas={aulas} horas={horasPlan(sol.seccion?.curso)} turno={sol.seccion?.turno} />}
               <textarea rows={2} value={respuesta} onChange={(e) => setRespuesta(e.target.value)} placeholder="Respuesta (obligatoria si rechazas)" />
               <div className="form-actions">
                 <button type="button" className="btn-secondary" disabled={busy} onClick={() => resolver('rechazar')}>
@@ -174,7 +174,8 @@ export default function Solicitudes({ user }) {
   if (!lista || !proceso) return <Loading />
   const recibidas = lista.filter((s) => s.rol_destino === user.rol)
   const enviadas = lista.filter((s) => s.rol_destino !== user.rol)
-  const mostrar = user.rol === 'docente' ? lista : tab === 'recibidas' ? recibidas : enviadas
+  const listaUnica = user.rol === 'docente' || user.rol === 'admin'
+  const mostrar = listaUnica ? lista : tab === 'recibidas' ? recibidas : enviadas
 
   return (
     <section className="page-stack">
@@ -185,7 +186,7 @@ export default function Solicitudes({ user }) {
           <p className="muted">Todo cambio fuera de la fase de cada rol se coordina aquí y se aplica solo cuando el otro rol lo acepta.</p>
         </div>
       </div>
-      {user.rol !== 'docente' && (
+      {!listaUnica && (
         <div className="tabs">
           <button type="button" className={tab === 'recibidas' ? 'active' : ''} onClick={() => setTab('recibidas')}>
             <Inbox size={16} /> Recibidas{' '}

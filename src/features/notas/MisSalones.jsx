@@ -76,9 +76,11 @@ export default function MisSalones() {
               <header>
                 <span className="legend-abrev">{s.curso.abreviatura || s.cod_seccion}</span>
                 <div>
-                  <strong>{s.curso.nombre_curso}</strong>
+                  <strong>
+                    {s.curso.nombre_curso} - {s.cod_seccion}
+                  </strong>
                   <small>
-                    Ciclo {romano(s.curso.ciclo)} · Sección {s.cod_seccion} · {TURNOS[s.turno]}
+                    Ciclo {romano(s.curso.ciclo)} · {TURNOS[s.turno]}
                   </small>
                 </div>
               </header>

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import logoUrl from '../assets/logo-unfv.png'
+import selloUrl from '../assets/sello-fiis.jpg'
 import { matriculaApi } from '../api/client'
 import { formatoNota, formatoParcial, redondear } from './academico'
 
@@ -112,21 +113,21 @@ const AZUL_TEXTO = [222, 236, 248]
 const BORDE = [112, 132, 168]
 const GRIS_TEXTO = [55, 60, 72]
 
-let logoCache = null
-async function logoUnfv() {
-  if (logoCache) return logoCache
+const imagenes = {}
+async function imagen(url) {
+  if (imagenes[url]) return imagenes[url]
   try {
-    const blob = await (await fetch(logoUrl)).blob()
-    logoCache = await new Promise((ok, fail) => {
+    const blob = await (await fetch(url)).blob()
+    imagenes[url] = await new Promise((ok, fail) => {
       const r = new FileReader()
       r.onload = () => ok(r.result)
       r.onerror = fail
       r.readAsDataURL(blob)
     })
   } catch {
-    logoCache = null
+    return null
   }
-  return logoCache
+  return imagenes[url]
 }
 
 /** Nivel = año de estudios (ciclos I-II → 01, III-IV → 02, V-VI → 03…). */
@@ -157,7 +158,7 @@ async function matriculasDelAnio(alumno, periodo, matricula) {
 
 /** Ficha (constancia) de matrícula: replica la que emite la Oficina Técnica de Servicios Académicos. */
 export async function descargarFichaMatriculaPDF({ alumno, periodo, matricula }) {
-  const [{ anio, lista }, logo] = await Promise.all([matriculasDelAnio(alumno, periodo, matricula), logoUnfv()])
+  const [{ anio, lista }, logo, sello] = await Promise.all([matriculasDelAnio(alumno, periodo, matricula), imagen(logoUrl), imagen(selloUrl)])
   const filas = lista.flatMap(({ cod, matricula: m }) =>
     (m?.detalles || []).filter((d) => d.estado === 'matriculado' && d.seccion).map((d) => ({ cod, d }))
   )
@@ -166,21 +167,24 @@ export async function descargarFichaMatriculaPDF({ alumno, periodo, matricula })
   const W = 210 - 2 * M
 
   // Encabezado: logo, facultad y oficina
-  if (logo) doc.addImage(logo, 'PNG', M + 2, 12, 50, 20.3)
+  if (logo) doc.addImage(logo, 'PNG', M + 1, 14, 42, 17.1)
+  // Sello de la Facultad (arriba a la derecha, como en la constancia impresa)
+  if (sello) doc.addImage(sello, 'JPEG', 168, 9, 30, 30)
+  const CX = 109
   doc.setTextColor(...GRIS_TEXTO)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11.5)
-  doc.text('FACULTAD DE INGENIERIA INDUSTRIAL Y DE SISTEMAS', 136, 18, { align: 'center' })
+  doc.setFontSize(10)
+  doc.text('FACULTAD DE INGENIERIA INDUSTRIAL Y DE SISTEMAS', CX, 18, { align: 'center' })
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(11)
-  doc.text('OFICINA TECNICA DE SERVICIOS ACADEMICOS', 136, 23.5, { align: 'center' })
+  doc.setFontSize(10)
+  doc.text('OFICINA TECNICA DE SERVICIOS ACADEMICOS', CX, 23.5, { align: 'center' })
   doc.setFontSize(17)
   const titulo = 'CONSTANCIA DE MATRICULA  '
   const wt = doc.getTextWidth(titulo)
   doc.setFont('helvetica', 'bold')
   const wa = doc.getTextWidth(anio)
   doc.setFont('helvetica', 'normal')
-  const x0 = 136 - (wt + wa) / 2
+  const x0 = CX - (wt + wa) / 2
   doc.text(titulo, x0, 35)
   doc.setFont('helvetica', 'bold')
   doc.text(anio, x0 + wt, 35)
