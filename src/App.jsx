@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   ClipboardPen,
   FileCheck2,
+  Inbox,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -47,6 +48,7 @@ import Solicitudes from './features/proceso/Solicitudes'
 import ActasRevision from './features/notas/ActasRevision'
 import MisSalones from './features/notas/MisSalones'
 import SalonNotas from './features/notas/SalonNotas'
+import Buzon from './features/buzon/Buzon'
 import { planPorId } from './utils/academico'
 
 // Roles que participan en el proceso de horarios: ven la barra de fases arriba
@@ -80,6 +82,7 @@ const NAV = {
     ['/malla', 'Mi malla curricular', Network],
     ['/horario', 'Mi horario', CalendarDays],
     ['/historial', 'Historial académico', ScrollText],
+    ['/buzon', 'Buzón', Inbox],
     ['/configuracion', 'Configuración de cuenta', Settings]
   ],
   admin: [
@@ -164,6 +167,7 @@ function Rutas({ user, rol, onUserUpdated }) {
       <Route path="/malla" element={<Dashboard alumno={user} />} />
       <Route path="/horario" element={<Horario alumno={user} />} />
       <Route path="/historial" element={<Historial alumno={user} />} />
+      <Route path="/buzon" element={<Buzon />} />
       {configuracion}
       {otra}
     </Routes>

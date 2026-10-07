@@ -2669,3 +2669,25 @@ svg { flex-shrink: 0; }
 .aviso svg { color: #16a34a; flex-shrink: 0; }
 @keyframes aviso-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (max-width: 700px) { .avisos { bottom: 78px; } .aviso { border-radius: 14px; } }
+
+/* Buzón del alumno */
+.topbar-buzon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.18); }
+.topbar-buzon:hover, .topbar-buzon.activo { background: rgba(255,255,255,.12); }
+.topbar-buzon-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: var(--unfv-orange, #f26b1d); color: #fff; font-size: 0.68rem; font-weight: 800; display: grid; place-items: center; border: 2px solid #161616; }
+.buzon { max-width: 860px; margin: 0 auto; width: 100%; }
+.buzon-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.buzon-head h1 { margin: 0; font-size: 1.6rem; }
+.buzon-head p { margin: 0.2rem 0 0; }
+.buzon-lista { list-style: none; margin: 0; padding: 0; background: #fff; border: 1px solid var(--unfv-border); border-radius: 14px; overflow: hidden; }
+.buzon-item + .buzon-item { border-top: 1px solid var(--unfv-border); }
+.buzon-fila { width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 0.85rem; align-items: center; padding: 0.9rem 1.1rem; background: transparent; text-align: left; color: inherit; border-radius: 0; }
+.buzon-fila:hover { background: #fafaf9; }
+.buzon-icono { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: #f1f5f9; color: #475569; }
+.buzon-icono.tipo-seguridad { background: #eef2ff; color: #4338ca; }
+.buzon-texto { display: grid; gap: 0.15rem; min-width: 0; }
+.buzon-texto strong { font-weight: 500; font-size: 0.95rem; color: #1c1917; }
+.buzon-item.nuevo .buzon-texto strong { font-weight: 700; }
+.buzon-texto small { color: #78716c; font-size: 0.78rem; }
+.buzon-punto { width: 9px; height: 9px; border-radius: 50%; background: var(--unfv-orange, #f26b1d); }
+.buzon-cuerpo { margin: 0; padding: 0 1.1rem 1.1rem calc(1.1rem + 36px + 0.85rem); color: #292524; font-size: 0.9rem; line-height: 1.6; white-space: pre-line; }
+@media (max-width: 600px) { .buzon-cuerpo { padding-left: 1.1rem; } .topbar-buzon { width: 34px; height: 34px; } }

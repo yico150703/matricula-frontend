@@ -1,5 +1,7 @@
-import { LogOut, Menu, Settings, Timer } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Inbox, LogOut, Menu, Settings, Timer } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { BUZON_EVENT, buzonApi } from '../api/client'
 import logo from '../assets/logo-unfv.png'
 
 const formatTimer = (total) => {
@@ -17,6 +19,22 @@ export default function TopBar({ user, rol, onLogout, onToggleMenu, secondsLeft 
       ? `${user.apellidos.toUpperCase()}, ${user.nombres.toUpperCase()}`
       : user?.cod_alumno
   const lowTime = secondsLeft !== null && secondsLeft <= 60
+  const location = useLocation()
+  const [noLeidos, setNoLeidos] = useState(0)
+
+  // Mensajes sin leer del buzón: al entrar, al cambiar de pantalla y cada minuto
+  useEffect(() => {
+    if (!esAlumno) return undefined
+    const consultar = () => buzonApi.noLeidos().then((r) => setNoLeidos(r.no_leidos)).catch(() => {})
+    consultar()
+    const t = setInterval(consultar, 60000)
+    const onCambio = (e) => setNoLeidos(e.detail)
+    window.addEventListener(BUZON_EVENT, onCambio)
+    return () => {
+      clearInterval(t)
+      window.removeEventListener(BUZON_EVENT, onCambio)
+    }
+  }, [esAlumno, location.pathname])
 
   return (
     <header className="unfv-topbar">
@@ -37,6 +55,13 @@ export default function TopBar({ user, rol, onLogout, onToggleMenu, secondsLeft 
           <div className={`topbar-timer ${lowTime ? 'timer-low' : ''}`} title="Tiempo restante de tu sesión">
             <Timer size={15} /> {formatTimer(secondsLeft)}
           </div>
+        )}
+
+        {esAlumno && (
+          <button type="button" className={`topbar-buzon ${location.pathname === '/buzon' ? 'activo' : ''}`} onClick={() => navigate('/buzon')} title="Buzón" aria-label={`Buzón${noLeidos ? `, ${noLeidos} sin leer` : ''}`}>
+            <Inbox size={18} />
+            {noLeidos > 0 && <span className="topbar-buzon-badge">{noLeidos > 9 ? '9+' : noLeidos}</span>}
+          </button>
         )}
 
         <button type="button" className="topbar-user" onClick={() => navigate('/configuracion')} title="Configuración de cuenta">

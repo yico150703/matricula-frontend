@@ -98,6 +98,16 @@ export async function api(path, options = {}) {
 const json = (method, payload) => ({ method, body: JSON.stringify(payload ?? {}) })
 const enc = encodeURIComponent
 
+export const buzonApi = {
+  listar: () => api('/buzon'),
+  noLeidos: () => api('/buzon/no-leidos'),
+  leer: (id) => api(`/buzon/${id}/leido`, json('POST')),
+  leerTodos: () => api('/buzon/leer-todos', json('POST')),
+}
+
+// Avisa a la barra superior que cambió la cantidad de mensajes sin leer
+export const BUZON_EVENT = 'matricula:buzon'
+
 export const authApi = {
   login: (usuario, password) => api('/auth/login', json('POST', { usuario, password })),
   recuperar: (usuario) => api('/auth/recuperar', json('POST', { usuario })),
