@@ -145,6 +145,7 @@ export const adminApi = {
   crearAlumno: (payload) => api('/alumnos', json('POST', payload)),
   actualizarAlumno: (codigo, payload) => api(`/alumnos/${enc(codigo)}`, json('PATCH', payload)),
   resetPassword: (codigo) => api(`/alumnos/${enc(codigo)}/reset-password`, json('POST')),
+  eliminarAlumno: (codigo) => api(`/alumnos/${enc(codigo)}`, { method: 'DELETE' }),
   // notas: { n1, n2, n3, sustitutorio, aplazado } o { nota }
   calificar: (codigo, codCurso, notas) => api(`/alumnos/${enc(codigo)}/calificar`, json('POST', { cod_curso: codCurso, ...notas })),
   solicitudesPassword: () => api('/admin/solicitudes-password'),

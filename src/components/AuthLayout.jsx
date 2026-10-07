@@ -2,7 +2,7 @@ import { CalendarCheck2, ShieldCheck, ListChecks } from 'lucide-react'
 import logo from '../assets/logo-unfv.png'
 
 /** Diseño compartido de las pantallas públicas (login, recuperar y restablecer contraseña). */
-export default function AuthLayout({ children, onOpenDiagramaER }) {
+export default function AuthLayout({ children }) {
   return (
     <div className="auth-page">
       <section className="auth-hero">
@@ -11,10 +11,6 @@ export default function AuthLayout({ children, onOpenDiagramaER }) {
           <h1>
             Sistema de Matrícula <span>UNFV</span>
           </h1>
-          <p className="auth-lead">
-            Arma tu horario por secciones A, B o C, revisa tus prerrequisitos y matricúlate en minutos, también en los
-            cursos que necesitas volver a llevar.
-          </p>
           <ul className="auth-features">
             <li>
               <CalendarCheck2 size={18} /> Horarios oficiales con docentes y aulas
@@ -26,11 +22,6 @@ export default function AuthLayout({ children, onOpenDiagramaER }) {
               <ShieldCheck size={18} /> Acceso seguro con tu código de alumno
             </li>
           </ul>
-          {onOpenDiagramaER && (
-            <button type="button" className="btn-ghost-light" onClick={onOpenDiagramaER}>
-              Ver modelo de datos (Diagrama E-R)
-            </button>
-          )}
         </div>
       </section>
       <section className="auth-panel">

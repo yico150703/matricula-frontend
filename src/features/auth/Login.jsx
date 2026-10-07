@@ -55,7 +55,7 @@ function CuentasPrueba({ onUsar }) {
   )
 }
 
-export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
+export default function Login({ onLoggedIn, notice }) {
   const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -82,7 +82,7 @@ export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
   }
 
   return (
-    <AuthLayout onOpenDiagramaER={onOpenDiagramaER}>
+    <AuthLayout>
       <form className="auth-form" onSubmit={submit}>
         {MOSTRAR_CUENTAS && (
           <CuentasPrueba
@@ -141,10 +141,6 @@ export default function Login({ onLoggedIn, onOpenDiagramaER, notice }) {
         <Link to="/recuperar" className="auth-link">
           ¿Olvidaste tu contraseña?
         </Link>
-        <div className="login-help">
-          <strong>¿Primer ingreso?</strong> Tu usuario y tu contraseña inicial son tu <b>código de alumno</b>. El sistema
-          te pedirá cambiarla al entrar.
-        </div>
       </form>
     </AuthLayout>
   )

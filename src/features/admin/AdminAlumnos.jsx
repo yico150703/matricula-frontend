@@ -1,10 +1,11 @@
-import { Ban, Check, CheckCircle2, ClipboardList, Copy, KeyRound, Pencil, RefreshCcw, Search, Target, UserCheck, UserPlus, X } from 'lucide-react'
+import { Ban, Check, CheckCircle2, ClipboardList, Copy, KeyRound, Pencil, RefreshCcw, Search, Target, Trash2, UserCheck, UserPlus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminApi } from '../../api/client'
 import { ErrorState, Loading } from '../../components/AsyncState'
 import { PLANES, correoInstitucional, planPorId } from '../../utils/academico'
 import { Mensaje } from '../../components/Aviso'
+import Modal from '../../components/Modal'
 
 const EMPTY = { cod_alumno: '', nombres: '', apellidos: '', id_plan: 1 }
 
@@ -117,6 +118,8 @@ export default function AdminAlumnos() {
   const [query, setQuery] = useState('')
   const [editando, setEditando] = useState(null)
   const [confirmReset, setConfirmReset] = useState(null)
+  const [eliminando, setEliminando] = useState(null)
+  const [borrando, setBorrando] = useState(false)
   const [msg, setMsg] = useState(null)
 
   const load = useCallback(() => {
@@ -167,6 +170,22 @@ export default function AdminAlumnos() {
       replaceAlumno(res.alumno, res.message)
     } catch (err) {
       setMsg({ ok: false, text: err.detail })
+    }
+  }
+
+  const eliminar = async () => {
+    const al = eliminando
+    setBorrando(true)
+    try {
+      const res = await adminApi.eliminarAlumno(al.cod_alumno)
+      setAlumnos((lista) => lista.filter((a) => a.cod_alumno !== al.cod_alumno))
+      setMsg({ ok: true, text: res.message })
+      setEliminando(null)
+    } catch (err) {
+      setMsg({ ok: false, text: err.detail })
+      setEliminando(null)
+    } finally {
+      setBorrando(false)
     }
   }
 
@@ -352,6 +371,11 @@ export default function AdminAlumnos() {
                       <button type="button" className="btn-secondary btn-sm" onClick={() => toggleEstado(al)}>
                         {al.estado === 'activo' ? <><Ban size={14} /> Desactivar</> : <><UserCheck size={14} /> Activar</>}
                       </button>
+                      {!al.cuenta_prueba && (
+                        <button type="button" className="icon-btn" onClick={() => setEliminando(al)} title="Eliminar alumno" aria-label="Eliminar alumno">
+                          <Trash2 size={15} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -362,6 +386,28 @@ export default function AdminAlumnos() {
       </article>
 
       {editando && <EditarAlumnoModal alumno={editando} onClose={() => setEditando(null)} onSaved={replaceAlumno} />}
+      {eliminando && (
+        <Modal
+          title="Eliminar alumno"
+          size="sm"
+          onClose={() => !borrando && setEliminando(null)}
+          footer={
+            <>
+              <button type="button" className="btn-secondary" onClick={() => setEliminando(null)} disabled={borrando}>
+                Cancelar
+              </button>
+              <button type="button" className="btn-danger" onClick={eliminar} disabled={borrando}>
+                <Trash2 size={15} /> {borrando ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </>
+          }
+        >
+          <p>
+            Se eliminará a <strong>{eliminando.apellidos}, {eliminando.nombres}</strong> ({eliminando.cod_alumno}) junto con sus matrículas y notas. Esta
+            acción no se puede deshacer.
+          </p>
+        </Modal>
+      )}
     </section>
   )
 }

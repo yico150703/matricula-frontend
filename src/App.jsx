@@ -268,7 +268,6 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
 export default function App() {
   const [auth, setAuth] = useState(null) // { user, rol }
   const [checking, setChecking] = useState(true)
-  const [diagramaOpen, setDiagramaOpen] = useState(false)
   const [notice, setNotice] = useState('')
   const [errorSesion, setErrorSesion] = useState(null)
   const navigate = useNavigate()
@@ -367,12 +366,11 @@ export default function App() {
     return (
       <>
         <Routes>
-          <Route path="/login" element={<Login onLoggedIn={loggedIn} notice={notice} onOpenDiagramaER={() => setDiagramaOpen(true)} />} />
+          <Route path="/login" element={<Login onLoggedIn={loggedIn} notice={notice} />} />
           <Route path="/recuperar" element={<Recuperar />} />
           <Route path="/restablecer" element={<Restablecer />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-        <DiagramaERModal isOpen={diagramaOpen} onClose={() => setDiagramaOpen(false)} />
       </>
     )
   }
