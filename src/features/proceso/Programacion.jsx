@@ -2,7 +2,6 @@ import {
   AlertTriangle,
   ArrowLeftCircle,
   CheckCircle2,
-  Copy,
   Filter,
   Lock,
   MessageSquareWarning,
@@ -19,6 +18,7 @@ import { ErrorState, Loading } from '../../components/AsyncState'
 import Modal from '../../components/Modal'
 import { colorCurso, horarioCorto, romano, TURNOS } from '../../utils/academico'
 import { ajustarAlTurno, AulaSelect, DocenteCombo, bloquesDe, horasPlan, RANGO_TURNO, sesionesPorPlan, SesionesEditor, sesionesIniciales, SolicitudModal } from './editores'
+import PlantillasPanel from './Plantillas'
 import { useProceso } from './ProcesoContext'
 import { Mensaje } from '../../components/Aviso'
 
@@ -169,7 +169,7 @@ function AccionModal({ titulo, texto, pedirMotivo, confirmar, onClose, onConfirm
 
 export default function Programacion({ user }) {
   const rol = user.rol
-  const { proceso, procesos, periodoId, aulas, recargar } = useProceso()
+  const { proceso, periodoId, aulas, recargar } = useProceso()
   const [data, setData] = useState(null)
   const [docentes, setDocentes] = useState([])
   const [error, setError] = useState(null)
@@ -180,7 +180,6 @@ export default function Programacion({ user }) {
   const [editando, setEditando] = useState(null) // { curso, seccion? }
   const [solicitando, setSolicitando] = useState(null)
   const [accion, setAccion] = useState(null)
-  const [origen, setOrigen] = useState('')
   const [busy, setBusy] = useState(null)
   const [errAula, setErrAula] = useState({}) // { id_seccion: mensaje } se queda visible junto a la sección
 
@@ -266,17 +265,6 @@ export default function Programacion({ user }) {
     }
   }
 
-  const copiar = async () => {
-    setMsg(null)
-    try {
-      const res = await procesoApi.copiar(periodoId, Number(origen))
-      setMsg({ ok: true, text: res.message })
-      await refrescarTodo()
-    } catch (err) {
-      setMsg({ ok: false, text: err.detail })
-    }
-  }
-
   const ejecutar = async (acc, motivo) => {
     const res = await procesoApi.accion(periodoId, acc, motivo ? { motivo } : {})
     setAccion(null)
@@ -340,10 +328,6 @@ export default function Programacion({ user }) {
           : fase === 4
             ? `Docentes: ${cnt.docentes_confirmados} secciones confirmadas, ${cnt.docentes_pendientes} por confirmar, ${cnt.docentes_observados} observadas. Cuando todos confirmen, los horarios quedan establecidos y la matrícula se abre sola.`
             : null
-
-  // Solo períodos del mismo tipo de semestre (-1 ciclos impares, -2 ciclos pares), más recientes primero
-  const tipo = (x) => x.periodo.cod_per_acad.slice(-2)
-  const otros = procesos.filter((x) => x.id_periodo !== periodoId && x.conteo.secciones > 0 && tipo(x) === tipo(p)).sort((a, b) => b.id_periodo - a.id_periodo)
 
   return (
     <section className="page-stack">
@@ -417,26 +401,7 @@ export default function Programacion({ user }) {
         </div>
       )}
 
-      {rol === 'jefe' && fase === 1 && cnt.secciones === 0 && otros.length > 0 && (
-        <div className="bulk-bar">
-          <span>
-            <strong>Empieza rápido:</strong> copia las secciones, turnos y horas de un período anterior (sin docentes ni aulas) y ajústalas.
-          </span>
-          <div className="bulk-buttons">
-            <select className="select-input" value={origen} onChange={(e) => setOrigen(e.target.value)}>
-              <option value="">— Período base —</option>
-              {otros.map((o) => (
-                <option key={o.id_periodo} value={o.id_periodo}>
-                  {o.periodo.cod_per_acad} ({o.conteo.secciones} secciones)
-                </option>
-              ))}
-            </select>
-            <button type="button" className="btn-outline" disabled={!origen} onClick={copiar}>
-              <Copy size={15} /> Copiar como base
-            </button>
-          </div>
-        </div>
-      )}
+      {fase < 7 && <PlantillasPanel user={user} proceso={p} onApplied={refrescarTodo} />}
 
       {rol === 'admin' && p.historial?.length > 0 && (
         <details className="panel-card actividad-proceso">
@@ -535,6 +500,7 @@ export default function Programacion({ user }) {
                               <DocenteCombo
                                 value={s.id_docente || null}
                                 actual={s.docente}
+                                curso={s.cod_curso}
                                 docentes={docentes}
                                 onChange={(id) => asignarDocente(s, id)}
                                 disabled={busy === s.id_seccion}

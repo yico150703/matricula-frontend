@@ -188,6 +188,21 @@ export const procesoApi = {
     api(`/proceso/solicitudes/${idSolicitud}/resolver`, json('POST', { accion, respuesta, propuesta })),
 }
 
+// --- Plantillas de horario: cada rol aplica su parte (jefe horarios, director docentes, asistente aulas) ---
+export const plantillasApi = {
+  listar: (idPeriodo) => api(`/proceso/plantillas${idPeriodo ? `?periodo=${idPeriodo}` : ''}`),
+  ver: (idPlantilla) => api(`/proceso/plantillas/${idPlantilla}`),
+  guardar: (idPeriodo, nombre, descripcion) => api(`/proceso/${idPeriodo}/plantillas`, json('POST', { nombre, descripcion })),
+  aplicar: (idPeriodo, idPlantilla, opciones = {}) => api(`/proceso/${idPeriodo}/plantillas/${idPlantilla}/aplicar`, json('POST', opciones)),
+  eliminar: (idPlantilla) => api(`/proceso/plantillas/${idPlantilla}`, { method: 'DELETE' }),
+}
+
+// --- Docentes habilitados por curso (qué cursos puede dictar cada docente) ---
+export const habilitacionesApi = {
+  listar: () => api('/habilitaciones'),
+  guardar: (idDocente, cursos) => api(`/habilitaciones/${idDocente}`, json('PUT', { cursos })),
+}
+
 // --- Docente ---
 export const docenteApi = {
   horario: (idPeriodo) => api(`/docente/horario${idPeriodo ? `?periodo=${idPeriodo}` : ''}`),

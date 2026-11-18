@@ -122,10 +122,10 @@ export function SesionesEditor({ value, onChange, horas = 0, turno }) {
   )
 }
 
-export function PropuestaEditor({ tipo, value, onChange, docentes = [], aulas = [], horas = 0, turno }) {
+export function PropuestaEditor({ tipo, value, onChange, docentes = [], aulas = [], horas = 0, turno, curso }) {
   if (tipo === 'horario') return <SesionesEditor value={value.sesiones} onChange={(sesiones) => onChange({ ...value, sesiones })} horas={horas} turno={turno} />
   if (tipo === 'docente')
-    return <DocenteCombo value={value.id_docente || null} docentes={docentes} onChange={(id) => onChange({ ...value, id_docente: id })} />
+    return <DocenteCombo value={value.id_docente || null} docentes={docentes} curso={curso} onChange={(id) => onChange({ ...value, id_docente: id })} />
   return <AulaSelect value={value.aula || ''} aulas={aulas} onChange={(aula) => onChange({ ...value, aula })} />
 }
 
@@ -227,7 +227,16 @@ export function SolicitudModal({ rol, idPeriodo, seccion, docentes, aulas, onClo
         {conPropuesta && (
           <div className="field">
             Cambio propuesto
-            <PropuestaEditor tipo={tipo} value={propuesta} onChange={setPropuesta} docentes={docentes} aulas={aulas} horas={horasPlan(seccion.curso)} turno={seccion.turno} />
+            <PropuestaEditor
+              tipo={tipo}
+              value={propuesta}
+              onChange={setPropuesta}
+              docentes={docentes}
+              aulas={aulas}
+              horas={horasPlan(seccion.curso)}
+              turno={seccion.turno}
+              curso={seccion.cod_curso}
+            />
           </div>
         )}
         <p className="muted small">La solicitud llegará a: {ROL_NOMBRE[destino]}. El cambio se aplica solo cuando lo acepte.</p>
@@ -243,8 +252,9 @@ const sinTildes = (t) =>
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
 
-/** Selector de docente con buscador por nombre. Incluye «Docente por asignar» (cuando aún no hay docente disponible). */
-export function DocenteCombo({ value, actual, docentes, onChange, disabled }) {
+/** Selector de docente con buscador por nombre. Incluye «Docente por asignar» (cuando aún no hay docente disponible).
+ *  Con `curso` solo ofrece a los docentes habilitados para dictarlo (el servidor y la base de datos rechazan a los demás). */
+export function DocenteCombo({ value, actual, docentes, onChange, disabled, curso }) {
   const [abierto, setAbierto] = useState(false)
   const [q, setQ] = useState('')
   const ref = useRef(null)
@@ -255,7 +265,8 @@ export function DocenteCombo({ value, actual, docentes, onChange, disabled }) {
     return () => document.removeEventListener('mousedown', fuera)
   }, [abierto])
   const term = sinTildes(q.trim())
-  const lista = docentes.filter((d) => !term || sinTildes(d.nombre_docente).includes(term))
+  const habilitados = curso == null ? docentes : docentes.filter((d) => (d.cursos || []).includes(curso))
+  const lista = habilitados.filter((d) => !term || sinTildes(d.nombre_docente).includes(term))
   const elegido = docentes.find((d) => d.id_admin === value)
   const etiqueta = elegido ? elegido.nombre_docente : actual && actual !== 'POR ASIGNAR' ? actual : 'Docente por asignar'
   const elegir = (id) => {
@@ -289,8 +300,17 @@ export function DocenteCombo({ value, actual, docentes, onChange, disabled }) {
                 </button>
               </li>
             ))}
-            {lista.length === 0 && <li className="docente-combo-vacio">Sin resultados para «{q}»</li>}
+            {lista.length === 0 && (
+              <li className="docente-combo-vacio">
+                {habilitados.length === 0 ? 'Ningún docente está habilitado para este curso.' : `Sin resultados para «${q}»`}
+              </li>
+            )}
           </ul>
+          {curso != null && (
+            <p className="docente-combo-nota">
+              {habilitados.length} {habilitados.length === 1 ? 'docente habilitado' : 'docentes habilitados'} para este curso · se gestionan en «Docentes habilitados»
+            </p>
+          )}
         </div>
       )}
     </div>

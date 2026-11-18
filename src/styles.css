@@ -2691,3 +2691,74 @@ svg { flex-shrink: 0; }
 .buzon-punto { width: 9px; height: 9px; border-radius: 50%; background: var(--unfv-orange, #f26b1d); }
 .buzon-cuerpo { margin: 0; padding: 0 1.1rem 1.1rem calc(1.1rem + 36px + 0.85rem); color: #292524; font-size: 0.9rem; line-height: 1.6; white-space: pre-line; }
 @media (max-width: 600px) { .buzon-cuerpo { padding-left: 1.1rem; } .topbar-buzon { width: 34px; height: 34px; } }
+
+/* ===== Plantillas de horario ===== */
+.modal-lg { max-width: 980px; }
+.plantillas-panel { padding: 0; overflow: hidden; }
+.plantillas-panel > summary { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.2rem; cursor: pointer; list-style: none; color: var(--unfv-text-dark); }
+.plantillas-panel > summary::-webkit-details-marker { display: none; }
+.plantillas-panel > summary > svg { color: var(--unfv-orange); flex-shrink: 0; }
+.plantillas-panel > summary > span:first-of-type { display: grid; gap: 0.15rem; flex: 1; min-width: 0; }
+.plantillas-panel > summary small { color: var(--unfv-text-muted); font-size: 0.82rem; }
+.plantillas-panel > summary::after { content: '▾'; color: var(--unfv-text-muted); transition: transform 0.15s; }
+.plantillas-panel[open] > summary::after { transform: rotate(180deg); }
+.plantillas-panel[open] > summary { border-bottom: 1px solid var(--unfv-border); }
+.plantillas-cuerpo { padding: 0.9rem 1.2rem 1.1rem; display: grid; gap: 0.75rem; }
+.plantillas-barra { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.plantillas-barra .btn-outline { margin-left: auto; }
+.plantillas-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.plantillas-lista li { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; padding: 0.7rem 0.85rem; border: 1px solid var(--unfv-border); border-radius: 10px; background: var(--unfv-sand); }
+.plantillas-lista li.incompatible { opacity: 0.7; }
+.plantilla-info { display: grid; gap: 0.15rem; min-width: 0; }
+.plantilla-info small { color: var(--unfv-text-muted); font-size: 0.8rem; }
+.plantilla-acciones { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.plantilla-meta { margin: 0 0 0.6rem; }
+.plantilla-chips { margin-bottom: 0.6rem; }
+.plantilla-tabla td { vertical-align: top; }
+.plantilla-tabla .sec-warn { display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; margin-top: 0.15rem; }
+.plantilla-resultado-ok { display: flex; align-items: center; gap: 0.5rem; color: #166534; background: #dcfce7; padding: 0.7rem 0.9rem; border-radius: 8px; font-weight: 700; margin: 0 0 0.8rem; }
+.plantilla-omitidas { border: 1px solid var(--unfv-border); border-radius: 8px; padding: 0.55rem 0.8rem; margin-bottom: 0.6rem; font-size: 0.85rem; }
+.plantilla-omitidas summary { cursor: pointer; font-weight: 700; color: var(--unfv-text-dark); }
+.plantilla-omitidas.warn { border-color: #fcd34d; background: #fffbeb; }
+.plantilla-omitidas.warn summary { color: #92400e; }
+.plantilla-omitidas ul { margin: 0.5rem 0 0; padding-left: 1.1rem; max-height: 260px; overflow-y: auto; display: grid; gap: 0.3rem; }
+.opciones-aplicar { display: grid; gap: 0.45rem; }
+.opciones-aplicar .check-inline { align-self: auto; }
+.opciones-aplicar .form-error { display: flex; align-items: center; gap: 0.35rem; }
+.docente-combo-nota { margin: 0; padding: 0.45rem 0.7rem; border-top: 1px solid var(--unfv-border); font-size: 0.74rem; color: var(--unfv-text-muted); background: var(--unfv-sand); }
+
+/* ===== Docentes habilitados ===== */
+.habil-layout { display: grid; grid-template-columns: minmax(240px, 320px) 1fr; gap: 1rem; align-items: start; }
+.habil-docentes { padding: 0.8rem; position: sticky; top: 1rem; }
+.habil-docentes .search-wrap { min-width: 0; margin-bottom: 0.5rem; }
+.habil-docentes ul { list-style: none; margin: 0; padding: 0; max-height: 65vh; overflow-y: auto; display: grid; gap: 0.15rem; }
+.habil-docentes li button { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.5rem 0.6rem; border-radius: 8px; background: transparent; color: var(--unfv-text-dark); font-size: 0.83rem; font-weight: 500; text-align: left; }
+.habil-docentes li button:hover { background: var(--unfv-sand); }
+.habil-docentes li button.activo { background: var(--unfv-orange-soft); color: var(--unfv-orange-dark); font-weight: 700; }
+.habil-vacio { padding: 0.5rem; }
+.habil-cursos { display: grid; gap: 0.9rem; }
+.habil-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.habil-cab h2 { margin: 0; font-size: 1.15rem; }
+.habil-cab p { margin: 0.2rem 0 0; }
+.habil-botones { display: flex; gap: 0.4rem; }
+.habil-buscar-curso { min-width: 0; }
+.habil-ciclo { border: 1px solid var(--unfv-border); border-radius: 10px; padding: 0.6rem 0.8rem 0.8rem; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.4rem; }
+.habil-ciclo legend { font-weight: 800; font-size: 0.85rem; padding: 0 0.35rem; color: var(--unfv-text-dark); }
+.habil-ciclo legend small { color: var(--unfv-text-muted); font-weight: 600; }
+.habil-curso { display: flex; gap: 0.55rem; align-items: flex-start; padding: 0.45rem 0.55rem; border-radius: 8px; border: 1px solid transparent; cursor: pointer; font-size: 0.84rem; }
+.habil-curso:hover { background: var(--unfv-sand); }
+.habil-curso.on { background: var(--unfv-orange-soft); border-color: #FDBA8C; }
+.habil-curso.bloqueado { cursor: not-allowed; }
+.habil-curso input { margin-top: 0.15rem; accent-color: var(--unfv-orange); }
+.habil-curso span { display: grid; gap: 0.1rem; }
+.habil-curso small { color: var(--unfv-text-muted); font-size: 0.74rem; display: inline-flex; align-items: center; gap: 0.2rem; flex-wrap: wrap; }
+.chips .chip svg { vertical-align: -2px; margin-right: 0.2rem; }
+
+@media (max-width: 768px) {
+  .habil-layout { grid-template-columns: 1fr; }
+  .habil-docentes { position: static; }
+  .habil-docentes ul { max-height: 240px; }
+  .plantillas-lista li { flex-direction: column; align-items: stretch; }
+  .plantilla-acciones { justify-content: flex-end; }
+  .plantillas-barra .btn-outline { margin-left: 0; width: 100%; justify-content: center; }
+}

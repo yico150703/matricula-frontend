@@ -125,7 +125,18 @@ function Tarjeta({ sol, user, docentes, aulas, onChange }) {
                 <input type="checkbox" checked={modificar} onChange={(e) => setModificar(e.target.checked)} />
                 {sol.propuesta ? 'Aprobar con otra alternativa' : 'Definir el cambio que se aplicará'}
               </label>
-              {modificar && <PropuestaEditor tipo={sol.tipo} value={propuesta} onChange={setPropuesta} docentes={docentes} aulas={aulas} horas={horasPlan(sol.seccion?.curso)} turno={sol.seccion?.turno} />}
+              {modificar && (
+                <PropuestaEditor
+                  tipo={sol.tipo}
+                  value={propuesta}
+                  onChange={setPropuesta}
+                  docentes={docentes}
+                  aulas={aulas}
+                  horas={horasPlan(sol.seccion?.curso)}
+                  turno={sol.seccion?.turno}
+                  curso={sol.seccion?.cod_curso}
+                />
+              )}
               <textarea rows={2} value={respuesta} onChange={(e) => setRespuesta(e.target.value)} placeholder="Respuesta (obligatoria si rechazas)" />
               <div className="form-actions">
                 <button type="button" className="btn-secondary" disabled={busy} onClick={() => resolver('rechazar')}>

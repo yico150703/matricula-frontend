@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Target,
   UserCheck,
+  UserCog,
   Users,
   X
 } from 'lucide-react'
@@ -43,6 +44,7 @@ import Matricula from './features/matricula/Matricula'
 import DocenteHorario from './features/proceso/DocenteHorario'
 import FaseBar from './features/proceso/FaseBar'
 import { ProcesoGate, ProcesoProvider } from './features/proceso/ProcesoContext'
+import Habilitaciones from './features/proceso/Habilitaciones'
 import Programacion from './features/proceso/Programacion'
 import Solicitudes from './features/proceso/Solicitudes'
 import ActasRevision from './features/notas/ActasRevision'
@@ -89,6 +91,7 @@ const NAV = {
     ['/admin', 'Panel de control', LayoutDashboard],
     ['/admin/proceso', 'Proceso de horarios', CalendarRange],
     ['/admin/solicitudes', 'Solicitudes de cambio', MessagesSquare],
+    ['/admin/habilitaciones', 'Docentes habilitados', UserCog],
     ['/admin/personal', 'Personal y roles', ShieldCheck],
     ['/admin/alumnos', 'Gestión de alumnos', Users],
     ['/admin/actas', 'Seguimiento de notas', ClipboardCheck],
@@ -98,17 +101,20 @@ const NAV = {
   jefe: [
     ['/programacion', 'Programación de horarios', CalendarRange],
     ['/solicitudes', 'Solicitudes de cambio', MessagesSquare],
+    ['/habilitaciones', 'Docentes habilitados', UserCog],
     ['/configuracion', 'Configuración de cuenta', Settings]
   ],
   director: [
     ['/programacion', 'Asignación de docentes', UserCheck],
     ['/solicitudes', 'Solicitudes de cambio', MessagesSquare],
+    ['/habilitaciones', 'Docentes habilitados', UserCog],
     ['/actas', 'Actas de notas', FileCheck2],
     ['/configuracion', 'Configuración de cuenta', Settings]
   ],
   asistente: [
     ['/programacion', 'Asignación de aulas', Building2],
     ['/solicitudes', 'Solicitudes de cambio', MessagesSquare],
+    ['/habilitaciones', 'Docentes habilitados', UserCog],
     ['/configuracion', 'Configuración de cuenta', Settings]
   ],
   docente: [
@@ -133,6 +139,7 @@ function Rutas({ user, rol, onUserUpdated }) {
         <Route path="/admin/notas" element={<AdminNotas />} />
         <Route path="/admin/proceso" element={<ProcesoGate><Programacion user={user} /></ProcesoGate>} />
         <Route path="/admin/solicitudes" element={<ProcesoGate><Solicitudes user={user} /></ProcesoGate>} />
+        <Route path="/admin/habilitaciones" element={<Habilitaciones />} />
         {configuracion}
         {otra}
       </Routes>
@@ -155,6 +162,7 @@ function Rutas({ user, rol, onUserUpdated }) {
       <Routes>
         <Route path="/programacion" element={<Programacion user={user} />} />
         <Route path="/solicitudes" element={<Solicitudes user={user} />} />
+        <Route path="/habilitaciones" element={<Habilitaciones />} />
         {rol === 'director' && <Route path="/actas" element={<ActasRevision />} />}
         {configuracion}
         {otra}
@@ -250,7 +258,7 @@ function Shell({ user, rol, onLogout, onUserUpdated, secondsLeft }) {
       </aside>
 
       <main className="unfv-main-content">
-        {conFases && location.pathname !== '/configuracion' && <FaseBar />}
+        {conFases && location.pathname !== '/configuracion' && !location.pathname.endsWith('/habilitaciones') && <FaseBar />}
         {enProceso && location.pathname !== '/configuracion' ? (
           <ProcesoGate>
             <Rutas user={user} rol={rol} onUserUpdated={onUserUpdated} />
